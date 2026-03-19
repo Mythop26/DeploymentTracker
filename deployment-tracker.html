@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DeployTrack — Deployment Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1f2d45;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --font: 'Syne', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── GRID BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ──────────── AUTH SCREEN ──────────── */
+  #auth-screen {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+    background: var(--bg);
+  }
+
+  .auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px 44px;
+    width: 100%; max-width: 420px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 80px rgba(0,212,255,0.08);
+  }
+
+  .auth-card::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(0,212,255,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .auth-logo {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 32px;
+  }
+
+  .auth-logo .dot-grid {
+    display: grid; grid-template-columns: repeat(3,6px); gap: 3px;
+  }
+  .auth-logo .dot-grid span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    animation: pulse-dot 2s infinite;
+  }
+  .auth-logo .dot-grid span:nth-child(2) { animation-delay: 0.2s; background: var(--accent2); }
+  .auth-logo .dot-grid span:nth-child(3) { animation-delay: 0.4s; }
+  .auth-logo .dot-grid span:nth-child(5) { animation-delay: 0.3s; background: var(--accent2); }
+  @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .auth-logo h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+  .auth-logo h1 span { color: var(--accent); }
+
+  .auth-tabs {
+    display: flex; gap: 4px;
+    background: var(--bg);
+    border-radius: 10px; padding: 4px;
+    margin-bottom: 28px;
+  }
+
+  .auth-tab {
+    flex: 1; padding: 9px;
+    border: none; border-radius: 8px;
+    background: transparent; color: var(--muted);
+    font-family: var(--font); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .auth-tab.active { background: var(--surface2); color: var(--text); }
+
+  .field { margin-bottom: 18px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 7px; letter-spacing: 0.05em; font-family: var(--mono); }
+  .field input, .field select {
+    width: 100%; padding: 12px 14px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text);
+    font-family: var(--mono); font-size: 14px;
+    outline: none; transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+  .field select option { background: var(--bg); }
+
+  .btn-primary {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, var(--accent), #0099bb);
+    border: none; border-radius: 10px;
+    color: #000; font-family: var(--font);
+    font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+    letter-spacing: 0.02em;
+  }
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .auth-error {
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+    color: #fca5a5; border-radius: 8px; padding: 10px 14px;
+    font-size: 13px; margin-bottom: 16px; display: none;
+    font-family: var(--mono);
+  }
+
+  /* ──────────── APP SHELL ──────────── */
+  #app { display: none; min-height: 100vh; position: relative; z-index: 1; }
+
+  /* HEADER */
+  .header {
+    background: rgba(17,24,39,0.8);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px; position: sticky; top: 0; z-index: 50;
+  }
+
+  .header-logo { display: flex; align-items: center; gap: 10px; }
+  .header-logo .pulse {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 0 rgba(0,212,255,0.4);
+    animation: ping 2s infinite;
+  }
+  @keyframes ping {
+    0% { box-shadow: 0 0 0 0 rgba(0,212,255,0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(0,212,255,0); }
+    100% { box-shadow: 0 0 0 0 rgba(0,212,255,0); }
+  }
+
+  .header-logo span { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; }
+  .header-logo span em { color: var(--accent); font-style: normal; }
+
+  .header-right { display: flex; align-items: center; gap: 16px; }
+
+  .user-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 12px;
+    font-size: 13px; font-family: var(--mono);
+  }
+  .user-badge .role-tag {
+    font-size: 10px; padding: 2px 7px; border-radius: 4px;
+    background: rgba(0,212,255,0.15); color: var(--accent);
+    font-weight: 600; letter-spacing: 0.05em;
+  }
+  .user-badge .role-tag.vendor { background: rgba(124,58,237,0.15); color: #a78bfa; }
+
+  .btn-logout {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); padding: 7px 14px; border-radius: 8px;
+    font-family: var(--font); font-size: 13px; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* MAIN */
+  .main { padding: 32px; max-width: 1400px; margin: 0 auto; }
+
+  /* STATS */
+  .stats-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px 22px;
+    position: relative; overflow: hidden;
+  }
+  .stat-card::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .stat-card.total::after { background: var(--accent); }
+  .stat-card.success::after { background: var(--success); }
+  .stat-card.failed::after { background: var(--danger); }
+  .stat-card.pending::after { background: var(--warning); }
+
+  .stat-label { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; margin-bottom: 10px; font-family: var(--mono); }
+  .stat-value { font-size: 36px; font-weight: 800; line-height: 1; }
+  .stat-card.total .stat-value { color: var(--accent); }
+  .stat-card.success .stat-value { color: var(--success); }
+  .stat-card.failed .stat-value { color: var(--danger); }
+  .stat-card.pending .stat-value { color: var(--warning); }
+
+  /* TABS */
+  .tabs-bar {
+    display: flex; align-items: center; gap: 4px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 6px;
+    margin-bottom: 24px; flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    padding: 9px 20px; border: none; border-radius: 8px;
+    background: transparent; color: var(--muted);
+    font-family: var(--font); font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; letter-spacing: 0.02em;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active {
+    background: var(--surface2); color: var(--accent);
+    border: 1px solid rgba(0,212,255,0.2);
+    box-shadow: 0 0 12px rgba(0,212,255,0.08);
+  }
+
+  /* TOOLBAR */
+  .toolbar {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 20px; flex-wrap: wrap;
+  }
+
+  .search-box {
+    flex: 1; min-width: 200px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 16px;
+    color: var(--text); font-family: var(--mono); font-size: 13px;
+    outline: none; transition: border-color 0.2s;
+  }
+  .search-box:focus { border-color: var(--accent); }
+  .search-box::placeholder { color: var(--muted); }
+
+  .btn-add {
+    background: linear-gradient(135deg, var(--accent), #0099bb);
+    border: none; border-radius: 10px;
+    color: #000; padding: 10px 20px;
+    font-family: var(--font); font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .btn-add:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  /* TABLE */
+  .table-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden;
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  thead tr {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    padding: 14px 18px; text-align: left;
+    font-size: 11px; color: var(--muted);
+    font-family: var(--mono); letter-spacing: 0.08em;
+    font-weight: 500;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(0,212,255,0.03); }
+
+  td {
+    padding: 14px 18px; font-size: 13px;
+    vertical-align: middle;
+  }
+
+  .cr-no {
+    font-family: var(--mono); color: var(--accent);
+    font-size: 12px; font-weight: 500;
+  }
+
+  .desc-cell { max-width: 220px; }
+  .desc-text {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 220px; display: block;
+  }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 6px;
+    font-size: 11px; font-weight: 700; font-family: var(--mono);
+    letter-spacing: 0.05em;
+  }
+  .badge.success { background: rgba(16,185,129,0.12); color: var(--success); border: 1px solid rgba(16,185,129,0.2); }
+  .badge.failure { background: rgba(239,68,68,0.12); color: var(--danger); border: 1px solid rgba(239,68,68,0.2); }
+  .badge.pending { background: rgba(245,158,11,0.12); color: var(--warning); border: 1px solid rgba(245,158,11,0.2); }
+  .badge::before { content: '●'; font-size: 8px; }
+
+  .env-badge {
+    display: inline-block; padding: 3px 9px; border-radius: 5px;
+    font-size: 11px; font-family: var(--mono); font-weight: 600;
+    background: rgba(124,58,237,0.15); color: #a78bfa;
+    border: 1px solid rgba(124,58,237,0.2);
+  }
+
+  .action-btns { display: flex; gap: 8px; }
+  .btn-icon {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); padding: 6px 10px; border-radius: 7px;
+    font-size: 13px; cursor: pointer; transition: all 0.2s;
+    font-family: var(--mono);
+  }
+  .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-icon.del:hover { border-color: var(--danger); color: var(--danger); }
+
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    color: var(--muted); font-family: var(--mono); font-size: 14px;
+  }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 200; padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 18px; padding: 36px; width: 100%; max-width: 520px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+  .modal-header h2 { font-size: 20px; font-weight: 700; }
+  .modal-close { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; line-height: 1; }
+  .modal-close:hover { color: var(--text); }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-grid .full { grid-column: 1 / -1; }
+
+  .modal-actions { display: flex; gap: 12px; margin-top: 28px; }
+  .btn-secondary {
+    flex: 1; padding: 12px;
+    background: transparent; border: 1px solid var(--border);
+    border-radius: 10px; color: var(--muted);
+    font-family: var(--font); font-size: 14px; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--text); color: var(--text); }
+
+  .modal-actions .btn-primary { flex: 2; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 20px;
+    font-family: var(--mono); font-size: 13px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    z-index: 999; transform: translateY(100px); opacity: 0;
+    transition: all 0.3s; display: flex; align-items: center; gap: 10px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.ok { border-left: 3px solid var(--success); }
+  .toast.err { border-left: 3px solid var(--danger); }
+
+  /* LOADER */
+  .loader {
+    display: inline-block; width: 16px; height: 16px;
+    border: 2px solid rgba(0,212,255,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* FIREBASE SETUP BANNER */
+  .setup-banner {
+    background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3);
+    border-radius: 12px; padding: 16px 20px; margin-bottom: 24px;
+    font-size: 13px; font-family: var(--mono); color: #fcd34d;
+    display: none;
+  }
+  .setup-banner a { color: var(--accent); }
+
+  @media (max-width: 768px) {
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .main { padding: 16px; }
+    .header { padding: 0 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid .full { grid-column: 1; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ AUTH SCREEN ══ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="dot-grid">
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+      </div>
+      <h1>Deploy<span>Track</span></h1>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
+      <button class="auth-tab" onclick="switchTab('signup')">Sign Up</button>
+    </div>
+
+    <div id="auth-error" class="auth-error"></div>
+
+    <!-- Login -->
+    <div id="login-form">
+      <div class="field">
+        <label>EMAIL</label>
+        <input type="email" id="login-email" placeholder="you@company.com" />
+      </div>
+      <div class="field">
+        <label>PASSWORD</label>
+        <input type="password" id="login-pwd" placeholder="••••••••" />
+      </div>
+      <button class="btn-primary" id="login-btn" onclick="doLogin()">Sign In</button>
+    </div>
+
+    <!-- Signup -->
+    <div id="signup-form" style="display:none">
+      <div class="field">
+        <label>FULL NAME</label>
+        <input type="text" id="signup-name" placeholder="John Doe" />
+      </div>
+      <div class="field">
+        <label>EMAIL</label>
+        <input type="email" id="signup-email" placeholder="you@company.com" />
+      </div>
+      <div class="field">
+        <label>ROLE</label>
+        <select id="signup-role">
+          <option value="vendor">Vendor</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>PASSWORD</label>
+        <input type="password" id="signup-pwd" placeholder="min 6 characters" />
+      </div>
+      <button class="btn-primary" id="signup-btn" onclick="doSignup()">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ══ -->
+<div id="app">
+  <header class="header">
+    <div class="header-logo">
+      <div class="pulse"></div>
+      <span>Deploy<em>Track</em></span>
+    </div>
+    <div class="header-right">
+      <div class="user-badge">
+        <span id="header-name">User</span>
+        <span class="role-tag" id="header-role">ADMIN</span>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="setup-banner" id="setup-banner">
+      ⚠ Running in <strong>Demo Mode</strong> — Firebase not configured.
+      Data is stored locally and resets on refresh.
+      <a href="#" onclick="showFirebaseHelp()">How to connect Firebase →</a>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card total">
+        <div class="stat-label">TOTAL DEPLOYMENTS</div>
+        <div class="stat-value" id="stat-total">0</div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-label">SUCCESS</div>
+        <div class="stat-value" id="stat-success">0</div>
+      </div>
+      <div class="stat-card failed">
+        <div class="stat-label">FAILED</div>
+        <div class="stat-value" id="stat-failed">0</div>
+      </div>
+      <div class="stat-card pending">
+        <div class="stat-label">PENDING</div>
+        <div class="stat-value" id="stat-pending">0</div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs-bar" id="tabs-bar">
+      <button class="tab-btn active" data-tab="ALL" onclick="switchEnvTab(this,'ALL')">All</button>
+      <button class="tab-btn" data-tab="Q1" onclick="switchEnvTab(this,'Q1')">Q1</button>
+      <button class="tab-btn" data-tab="Q2" onclick="switchEnvTab(this,'Q2')">Q2</button>
+      <button class="tab-btn" data-tab="Q3" onclick="switchEnvTab(this,'Q3')">Q3</button>
+      <button class="tab-btn" data-tab="Q4" onclick="switchEnvTab(this,'Q4')">Q4</button>
+      <button class="tab-btn" data-tab="CUG" onclick="switchEnvTab(this,'CUG')">CUG</button>
+      <button class="tab-btn" data-tab="PROD" onclick="switchEnvTab(this,'PROD')">PROD</button>
+      <button class="tab-btn" data-tab="UAT" onclick="switchEnvTab(this,'UAT')">UAT</button>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <input class="search-box" type="text" placeholder="🔍  Search CR No, Description..." oninput="filterTable(this.value)" />
+      <button class="btn-add" id="add-btn" onclick="openModal()">+ New Deployment</button>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>CR NO</th>
+            <th>DESCRIPTION</th>
+            <th>ENVIRONMENT</th>
+            <th>DATE</th>
+            <th>STATUS</th>
+            <th>REMARKS</th>
+            <th>ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+        </tbody>
+      </table>
+      <div class="empty-state" id="empty-state" style="display:none">
+        <div class="icon">📭</div>
+        No deployments found for this filter.
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ══ ADD / EDIT MODAL ══ -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">New Deployment</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label>CR NUMBER</label>
+        <input type="text" id="f-cr" placeholder="CR-2024-001" />
+      </div>
+      <div class="field">
+        <label>ENVIRONMENT</label>
+        <select id="f-env">
+          <option value="Q1">Q1</option>
+          <option value="Q2">Q2</option>
+          <option value="Q3">Q3</option>
+          <option value="Q4">Q4</option>
+          <option value="CUG">CUG</option>
+          <option value="PROD">PROD</option>
+          <option value="UAT">UAT</option>
+        </select>
+      </div>
+      <div class="field full">
+        <label>DESCRIPTION</label>
+        <input type="text" id="f-desc" placeholder="Brief description of the deployment..." />
+      </div>
+      <div class="field">
+        <label>STATUS</label>
+        <select id="f-status">
+          <option value="Pending">Pending</option>
+          <option value="Success">Success</option>
+          <option value="Failure">Failure</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>DATE</label>
+        <input type="date" id="f-date" />
+      </div>
+      <div class="field full">
+        <label>REMARKS</label>
+        <input type="text" id="f-remarks" placeholder="Any notes or comments..." />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveDeployment()">Save Deployment</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ══ FIREBASE SDK ══ -->
+<script type="module">
+// ════════════════════════════════════════════════════════
+//   🔥 FIREBASE CONFIGURATION
+//   Replace the config below with your Firebase project config.
+//   Get it from: Firebase Console → Project Settings → Your Apps
+// ════════════════════════════════════════════════════════
+
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAuUJwr7auGmIaG50wh-vRo3OhFsA8lpCw",
+  authDomain: "deploymenttracker-3220d.firebaseapp.com",
+  projectId: "deploymenttracker-3220d",
+  storageBucket: "deploymenttracker-3220d.firebasestorage.app",
+  messagingSenderId: "374280387664",
+  appId: "1:374280387664:web:510274e2148d4459eba555",
+  measurementId: "G-D3542L25S6"
+};
+
+// ════════════════════════════════════════════════════════
+//   APP STATE
+// ════════════════════════════════════════════════════════
+let firebaseReady = false;
+let db = null, auth = null;
+let currentUser = null;
+let currentTab = 'ALL';
+let editingId = null;
+
+// In-memory store for demo mode
+let demoDeployments = [
+  { id:'d1', crNo:'CR-2024-001', description:'API Gateway upgrade to v2', env:'PROD', date:'2024-03-01', status:'Success', remarks:'Smooth rollout', createdBy:'admin@demo.com' },
+  { id:'d2', crNo:'CR-2024-002', description:'Auth service patch 2.1.3', env:'CUG', date:'2024-03-05', status:'Failure', remarks:'Rollback triggered - DB timeout', createdBy:'vendor@demo.com' },
+  { id:'d3', crNo:'CR-2024-003', description:'Frontend bundle optimization', env:'Q1', date:'2024-03-10', status:'Pending', remarks:'Awaiting QA sign-off', createdBy:'vendor@demo.com' },
+  { id:'d4', crNo:'CR-2024-004', description:'Payment gateway integration', env:'UAT', date:'2024-03-12', status:'Success', remarks:'All tests passed', createdBy:'admin@demo.com' },
+  { id:'d5', crNo:'CR-2024-005', description:'Database migration v5→v6', env:'Q2', date:'2024-03-15', status:'Pending', remarks:'Scheduled for weekend', createdBy:'vendor@demo.com' },
+];
+let demoUser = null;
+let demoUsers = [
+  { email:'admin@demo.com', password:'admin123', name:'Admin User', role:'admin' },
+  { email:'vendor@demo.com', password:'vendor123', name:'Vendor User', role:'vendor' },
+];
+
+// ════════════════════════════════════════════════════════
+//   FIREBASE INIT
+// ════════════════════════════════════════════════════════
+async function initFirebase() {
+  try {
+    if (FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY') {
+      console.warn('Firebase not configured — running in demo mode');
+      document.getElementById('setup-banner').style.display = 'block';
+      return;
+    }
+    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
+    const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+    const { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where, serverTimestamp, orderBy } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+
+    const app = initializeApp(FIREBASE_CONFIG);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    firebaseReady = true;
+
+    window._fb = { auth, db, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where, serverTimestamp, orderBy };
+
+    window._fb.onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const snap = await window._fb.getDocs(window._fb.query(window._fb.collection(db, 'users'), window._fb.where('uid','==',user.uid)));
+        const userData = snap.empty ? { name: user.email, role: 'vendor' } : snap.docs[0].data();
+        currentUser = { ...userData, email: user.email, uid: user.uid };
+        showApp();
+        loadDeployments();
+      } else {
+        showAuth();
+      }
+    });
+  } catch(e) {
+    console.error('Firebase init error:', e);
+    document.getElementById('setup-banner').style.display = 'block';
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//   AUTH
+// ════════════════════════════════════════════════════════
+window.switchTab = (t) => {
+  document.getElementById('login-form').style.display = t==='login' ? '' : 'none';
+  document.getElementById('signup-form').style.display = t==='signup' ? '' : 'none';
+  document.querySelectorAll('.auth-tab').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase().includes(t==='login'?'sign in':'sign up')));
+  clearAuthError();
+};
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg; el.style.display = 'block';
+}
+function clearAuthError() { document.getElementById('auth-error').style.display = 'none'; }
+
+window.doLogin = async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const pwd = document.getElementById('login-pwd').value;
+  if (!email || !pwd) return showAuthError('Please fill all fields');
+  clearAuthError();
+
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="loader"></span>';
+
+  if (!firebaseReady) {
+    // Demo mode
+    const u = demoUsers.find(u => u.email===email && u.password===pwd);
+    if (!u) { btn.disabled=false; btn.textContent='Sign In'; return showAuthError('Invalid credentials'); }
+    demoUser = u; currentUser = u;
+    showApp(); renderTable(demoDeployments);
+    btn.disabled=false; btn.textContent='Sign In';
+    return;
+  }
+
+  try {
+    await window._fb.signInWithEmailAndPassword(auth, email, pwd);
+  } catch(e) {
+    btn.disabled=false; btn.textContent='Sign In';
+    showAuthError(e.message.replace('Firebase: ','').replace(/\(.*\)/,''));
+  }
+};
+
+window.doSignup = async () => {
+  const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const role = document.getElementById('signup-role').value;
+  const pwd = document.getElementById('signup-pwd').value;
+  if (!name||!email||!pwd) return showAuthError('Please fill all fields');
+  clearAuthError();
+
+  const btn = document.getElementById('signup-btn');
+  btn.disabled=true; btn.innerHTML='<span class="loader"></span>';
+
+  if (!firebaseReady) {
+    demoUsers.push({email, password:pwd, name, role});
+    showToast('Account created! Sign in now.','ok');
+    switchTab('login');
+    btn.disabled=false; btn.textContent='Create Account';
+    return;
+  }
+
+  try {
+    const cred = await window._fb.createUserWithEmailAndPassword(auth, email, pwd);
+    await window._fb.updateProfile(cred.user, { displayName: name });
+    const { setDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+    await setDoc(window._fb.doc(db, 'users', cred.user.uid), { name, role, email, uid: cred.user.uid });
+    showToast('Account created!','ok');
+  } catch(e) {
+    btn.disabled=false; btn.textContent='Create Account';
+    showAuthError(e.message.replace('Firebase: ','').replace(/\(.*\)/,''));
+  }
+};
+
+window.doLogout = async () => {
+  if (firebaseReady) await window._fb.signOut(auth);
+  else { demoUser = null; currentUser = null; showAuth(); }
+};
+
+// ════════════════════════════════════════════════════════
+//   SHOW / HIDE SCREENS
+// ════════════════════════════════════════════════════════
+function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('header-name').textContent = currentUser.name || currentUser.email;
+  const roleEl = document.getElementById('header-role');
+  roleEl.textContent = (currentUser.role||'vendor').toUpperCase();
+  roleEl.className = 'role-tag' + (currentUser.role==='admin' ? '' : ' vendor');
+
+  // Vendors can't add if we want — remove button
+  if (currentUser.role === 'vendor') {
+    // Vendors CAN add deployments in this setup
+  }
+  updateStats();
+}
+
+function showAuth() {
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+// ════════════════════════════════════════════════════════
+//   DATA
+// ════════════════════════════════════════════════════════
+async function loadDeployments() {
+  if (!firebaseReady) {
+    renderTable(demoDeployments);
+    return;
+  }
+  try {
+    const snap = await window._fb.getDocs(window._fb.collection(db, 'deployments'));
+    const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderTable(rows);
+  } catch(e) { showToast('Error loading data','err'); }
+}
+
+let allRows = [];
+
+function renderTable(rows) {
+  allRows = rows;
+  applyFilters();
+}
+
+function applyFilters(search='') {
+  let rows = [...allRows];
+  if (currentTab !== 'ALL') rows = rows.filter(r => r.env === currentTab);
+  if (search) {
+    const s = search.toLowerCase();
+    rows = rows.filter(r =>
+      (r.crNo||'').toLowerCase().includes(s) ||
+      (r.description||'').toLowerCase().includes(s) ||
+      (r.remarks||'').toLowerCase().includes(s)
+    );
+  }
+  const tbody = document.getElementById('table-body');
+  const empty = document.getElementById('empty-state');
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    updateStats();
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = rows.map((r,i) => `
+    <tr>
+      <td style="color:var(--muted);font-family:var(--mono);font-size:12px">${i+1}</td>
+      <td><span class="cr-no">${esc(r.crNo||'—')}</span></td>
+      <td class="desc-cell"><span class="desc-text" title="${esc(r.description||'')}">${esc(r.description||'—')}</span></td>
+      <td><span class="env-badge">${esc(r.env||'—')}</span></td>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${r.date||'—'}</td>
+      <td><span class="badge ${(r.status||'').toLowerCase()}">${esc(r.status||'Pending')}</span></td>
+      <td style="font-size:12px;color:var(--muted);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.remarks||'—')}</td>
+      <td>
+        <div class="action-btns">
+          <button class="btn-icon" onclick="editRow('${r.id}')">✎ Edit</button>
+          ${currentUser.role==='admin' ? `<button class="btn-icon del" onclick="deleteRow('${r.id}')">✕</button>` : ''}
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  updateStats();
+}
+
+function updateStats() {
+  const rows = currentTab==='ALL' ? allRows : allRows.filter(r=>r.env===currentTab);
+  document.getElementById('stat-total').textContent = rows.length;
+  document.getElementById('stat-success').textContent = rows.filter(r=>r.status==='Success').length;
+  document.getElementById('stat-failed').textContent = rows.filter(r=>r.status==='Failure').length;
+  document.getElementById('stat-pending').textContent = rows.filter(r=>r.status==='Pending').length;
+}
+
+window.filterTable = (v) => applyFilters(v);
+
+window.switchEnvTab = (el, tab) => {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  currentTab = tab;
+  applyFilters(document.querySelector('.search-box').value);
+};
+
+// ════════════════════════════════════════════════════════
+//   MODAL
+// ════════════════════════════════════════════════════════
+window.openModal = (id=null) => {
+  editingId = id;
+  document.getElementById('modal-title').textContent = id ? 'Edit Deployment' : 'New Deployment';
+  if (id) {
+    const r = allRows.find(r=>r.id===id);
+    if (r) {
+      document.getElementById('f-cr').value = r.crNo||'';
+      document.getElementById('f-env').value = r.env||'Q1';
+      document.getElementById('f-desc').value = r.description||'';
+      document.getElementById('f-status').value = r.status||'Pending';
+      document.getElementById('f-date').value = r.date||'';
+      document.getElementById('f-remarks').value = r.remarks||'';
+    }
+  } else {
+    ['f-cr','f-desc','f-remarks'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('f-env').value = currentTab!=='ALL' ? currentTab : 'Q1';
+    document.getElementById('f-status').value = 'Pending';
+    document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  }
+  document.getElementById('modal').classList.add('open');
+};
+
+window.closeModal = () => {
+  document.getElementById('modal').classList.remove('open');
+  editingId = null;
+};
+
+window.editRow = (id) => openModal(id);
+
+window.saveDeployment = async () => {
+  const data = {
+    crNo: document.getElementById('f-cr').value.trim(),
+    description: document.getElementById('f-desc').value.trim(),
+    env: document.getElementById('f-env').value,
+    status: document.getElementById('f-status').value,
+    date: document.getElementById('f-date').value,
+    remarks: document.getElementById('f-remarks').value.trim(),
+  };
+  if (!data.crNo || !data.description) return showToast('CR No and Description are required','err');
+
+  if (!firebaseReady) {
+    if (editingId) {
+      const idx = demoDeployments.findIndex(r=>r.id===editingId);
+      if (idx>-1) demoDeployments[idx] = { ...demoDeployments[idx], ...data };
+    } else {
+      demoDeployments.unshift({ id:'d'+Date.now(), ...data, createdBy: currentUser.email });
+    }
+    closeModal();
+    renderTable(demoDeployments);
+    showToast(editingId ? 'Deployment updated!' : 'Deployment added!','ok');
+    return;
+  }
+
+  try {
+    if (editingId) {
+      await window._fb.updateDoc(window._fb.doc(db,'deployments',editingId), data);
+      showToast('Updated!','ok');
+    } else {
+      await window._fb.addDoc(window._fb.collection(db,'deployments'), { ...data, createdBy: currentUser.email, createdAt: window._fb.serverTimestamp() });
+      showToast('Deployment added!','ok');
+    }
+    closeModal();
+    loadDeployments();
+  } catch(e) { showToast('Error saving: '+e.message,'err'); }
+};
+
+window.deleteRow = async (id) => {
+  if (!confirm('Delete this deployment?')) return;
+  if (!firebaseReady) {
+    demoDeployments = demoDeployments.filter(r=>r.id!==id);
+    renderTable(demoDeployments);
+    showToast('Deleted','ok'); return;
+  }
+  try {
+    await window._fb.deleteDoc(window._fb.doc(db,'deployments',id));
+    showToast('Deleted','ok');
+    loadDeployments();
+  } catch(e) { showToast('Error','err'); }
+};
+
+// ════════════════════════════════════════════════════════
+//   UTILS
+// ════════════════════════════════════════════════════════
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+let toastTimer;
+window.showToast = (msg, type='ok') => {
+  const t = document.getElementById('toast');
+  t.textContent = (type==='ok'?'✓ ':'✕ ') + msg;
+  t.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 3000);
+};
+
+window.showFirebaseHelp = () => {
+  alert(`HOW TO CONNECT FIREBASE:
+
+1. Go to console.firebase.google.com
+2. Create a new project
+3. Enable Authentication → Email/Password
+4. Create a Firestore database (start in test mode)
+5. Go to Project Settings → Your Apps → Web App
+6. Copy the config object
+7. Paste it into FIREBASE_CONFIG in this file's <script> section
+
+That's it! Your data will persist and users can log in.`);
+};
+
+// Close modal on overlay click
+document.getElementById('modal').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal(); });
+
+// Init
+initFirebase();
+</script>
+</body>
+</html>
