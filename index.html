@@ -11,10 +11,46 @@
   --border:#1e2d47; --accent:#00c8ff; --accent2:#ff6b2b;
   --success:#00d68f; --danger:#ff3d5a; --warning:#ffaa00; --rollback:#ff6b2b;
   --text:#ddeeff; --muted:#4a6080; --font:'Syne',sans-serif; --mono:'JetBrains Mono',monospace;
+  --header-bg:rgba(13,20,36,0.92); --shadow:rgba(0,0,0,0.5);
 }
+/* LIGHT THEME */
+body.light {
+  --bg:#f0f4f8; --surface:#ffffff; --surface2:#e8eef5; --surface3:#dde5ef;
+  --border:#c8d6e8; --accent:#0077cc; --accent2:#e05a1a;
+  --success:#059669; --danger:#dc2626; --warning:#d97706; --rollback:#e05a1a;
+  --text:#0f1f35; --muted:#6b7fa0;
+  --header-bg:rgba(255,255,255,0.95); --shadow:rgba(0,0,0,0.12);
+}
+body.light .badge.deployed{background:rgba(5,150,105,0.1);}
+body.light .badge.rollback{background:rgba(224,90,26,0.1);}
+body.light .badge.pending{background:rgba(217,119,6,0.1);}
+body.light .yn.yes{background:rgba(5,150,105,0.1);}
+body.light .yn.no{background:rgba(220,38,38,0.1);}
+body.light .yn.na{background:rgba(107,127,160,0.1);}
+body.light .role-pill.admin{background:rgba(0,119,204,0.12);}
+body.light .role-pill.vendor{background:rgba(224,90,26,0.12);}
+body.light .btn-primary{color:#fff;}
+body.light .field input,body.light .field select,body.light select{background:var(--surface2);}
+body.light .search-box{background:var(--surface);}
+body.light .header{box-shadow:0 1px 12px rgba(0,0,0,0.08);}
+body.light .auth-card{box-shadow:0 8px 40px rgba(0,0,0,0.12);}
+body.light .modal{box-shadow:0 20px 60px rgba(0,0,0,0.18);}
+body.light .demo-banner{background:rgba(217,119,6,0.08);}
+/* smooth transitions */
+body,body *{transition:background-color 0.25s ease,border-color 0.2s ease,color 0.15s ease,box-shadow 0.2s ease;}
+.loader,.live-dot{animation:unset;}
+.toast{transition:transform 0.3s,opacity 0.3s!important;}
+/* THEME TOGGLE */
+.theme-toggle{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;padding:5px 0;}
+.t-label{font-size:11px;font-family:var(--mono);color:var(--muted);}
+.toggle-track{width:40px;height:21px;background:var(--surface3);border:1.5px solid var(--border);border-radius:11px;position:relative;transition:background 0.25s,border-color 0.25s;flex-shrink:0;}
+.toggle-track.on{background:linear-gradient(135deg,var(--accent),#0099cc);border-color:var(--accent);}
+.toggle-thumb{position:absolute;top:2px;left:2px;width:15px;height:15px;background:#fff;border-radius:50%;transition:transform 0.25s cubic-bezier(.4,0,.2,1),box-shadow 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.3);}
+.toggle-track.on .toggle-thumb{transform:translateX(19px);}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden;}
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,200,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,255,0.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0;}
+body.light::before{background-image:linear-gradient(rgba(0,100,200,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,100,200,0.05) 1px,transparent 1px);}
 
 /* ══ AUTH ══ */
 #auth-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:200;background:var(--bg);}
@@ -90,15 +126,15 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .demo-banner a{color:var(--accent);cursor:pointer;text-decoration:underline;}
 
 /* STATS */
-.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px;}
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden;}
+.stats-row{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:14px;margin-bottom:24px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden;min-width:0;}
 .stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;}
 .s-total::after{background:var(--accent);}
 .s-dep::after{background:var(--success);}
 .s-roll::after{background:var(--rollback);}
 .s-pend::after{background:var(--warning);}
 .s-reat::after{background:#a78bfa;}
-.stat-label{font-size:10px;color:var(--muted);letter-spacing:0.08em;margin-bottom:8px;font-family:var(--mono);}
+.stat-label{font-size:10px;color:var(--muted);letter-spacing:0.08em;margin-bottom:8px;font-family:var(--mono);white-space:nowrap;}
 .stat-value{font-size:32px;font-weight:800;line-height:1;}
 .s-total .stat-value{color:var(--accent);}
 .s-dep .stat-value{color:var(--success);}
@@ -200,14 +236,19 @@ td{padding:11px 13px;font-size:12px;vertical-align:middle;}
 .loader{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,200,255,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
+@media(max-width:1100px){
+  .stats-row{grid-template-columns:repeat(3,minmax(100px,1fr));}
+}
 @media(max-width:768px){
   .stats-row{grid-template-columns:1fr 1fr;}
+  .stat-value{font-size:24px;}
   .main{padding:12px;}
   .header{padding:0 14px;}
   .form-grid{grid-template-columns:1fr 1fr;}
   .form-grid .c3{grid-column:span 2;}
-  .env-btn{padding:9px 18px;font-size:12px;}
+  .env-btn{padding:9px 14px;font-size:11px;}
   .auth-card{padding:32px 24px;}
+  .q-btn{padding:6px 12px;font-size:11px;}
 }
 </style>
 </head>
@@ -277,6 +318,14 @@ td{padding:11px 13px;font-size:12px;vertical-align:middle;}
       <div class="user-chip">
         <span class="uname" id="hdr-name">User</span>
         <span class="role-pill admin" id="hdr-role">ADMIN</span>
+      </div>
+      <!-- THEME TOGGLE -->
+      <div class="theme-toggle" onclick="toggleTheme()" title="Switch theme">
+        <span class="t-label" id="t-label">🌙</span>
+        <div class="toggle-track" id="toggle-track">
+          <div class="toggle-thumb"></div>
+        </div>
+        <span class="t-label" id="t-label2">☀️</span>
       </div>
       <button class="btn-logout" onclick="doLogout()">Sign Out</button>
     </div>
@@ -451,7 +500,6 @@ td{padding:11px 13px;font-size:12px;vertical-align:middle;}
 // ╔══════════════════════════════════════════════════╗
 // ║   FIREBASE CONFIG — paste your config here       ║
 // ╚══════════════════════════════════════════════════╝
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyAuUJwr7auGmIaG50wh-vRo3OhFsA8lpCw",
   authDomain: "deploymenttracker-3220d.firebaseapp.com",
@@ -461,6 +509,7 @@ const firebaseConfig = {
   appId: "1:374280387664:web:510274e2148d4459eba555",
   measurementId: "G-D3542L25S6"
 };
+
 
 // ── STATE ──
 let fbReady = false, db = null, auth = null;
@@ -494,15 +543,15 @@ let demoRows = [
     purpose:'NACH mandate processing fix', approvalDate:'2025-10-01', deployDate:'2025-10-05',
     status:'Deployed', reattemptDate:'', impactInProd:'None', reason:'Bug fix validated in UAT',
     uatDate:'2025-09-28', passLog:'Yes', prodFix:'', apkVersion:'v2.4.1', remarks:'', createdBy:'admin' },
-  { id:'d6', env:'UAT', crNo:'CR-2025-006', application:'Loan Module',
-    purpose:'Credit score integration testing', approvalDate:'2025-08-01', deployDate:'2025-08-03',
-    status:'Deployed', reattemptDate:'', impactInProd:'N/A', reason:'UAT passed all test cases',
-    uatDate:'2025-08-03', passLog:'Yes', prodFix:'', apkVersion:'v1.5.0', remarks:'Ready for PROD', createdBy:'admin' },
-  { id:'d7', env:'CUG', crNo:'CR-2026-001', application:'Mobile Banking App',
-    purpose:'Q4 RBI regulatory compliance update', approvalDate:'2026-01-10', deployDate:'2026-01-15',
-    status:'Deployed', reattemptDate:'', impactInProd:'None', reason:'Completed within window',
-    uatDate:'2026-01-08', passLog:'Yes', prodFix:'', apkVersion:'v3.3.0', remarks:'RBI compliance patch', createdBy:'admin' },
-];
+  // { id:'d6', env:'UAT', crNo:'CR-2025-006', application:'Loan Module',
+  //   purpose:'Credit score integration testing', approvalDate:'2025-08-01', deployDate:'2025-08-03',
+  //   status:'Deployed', reattemptDate:'', impactInProd:'N/A', reason:'UAT passed all test cases',
+  //   uatDate:'2025-08-03', passLog:'Yes', prodFix:'', apkVersion:'v1.5.0', remarks:'Ready for PROD', createdBy:'admin' },
+//   { id:'d7', env:'CUG', crNo:'CR-2026-001', application:'Mobile Banking App',
+//     purpose:'Q4 RBI regulatory compliance update', approvalDate:'2026-01-10', deployDate:'2026-01-15',
+//     status:'Deployed', reattemptDate:'', impactInProd:'None', reason:'Completed within window',
+//     uatDate:'2026-01-08', passLog:'Yes', prodFix:'', apkVersion:'v3.3.0', remarks:'RBI compliance patch', createdBy:'admin' },
+  ];
 
 // Demo users — in real app these are in Firebase Auth + Firestore
 const DEMO_USERS = [
@@ -886,8 +935,47 @@ window.toast = (msg, type='ok') => {
   clearTimeout(_tt); _tt = setTimeout(() => t.classList.remove('show'), 3200);
 };
 
+window.showFBHelp = () => alert(
+`HOW TO CONNECT FIREBASE:
+
+1. Go to console.firebase.google.com
+2. Select your project: deploymenttracker-3220d
+3. Authentication → Sign-in method → Email/Password → Enable
+4. Firestore Database → Create (start in test mode)
+5. Project Settings → Your Apps → Web App → copy config
+6. Paste config values into FB_CONFIG in this HTML file
+
+TO ADD USERS (admin only — no self sign-up):
+• Firebase Console → Authentication → Users → Add user
+• Set their email & password
+• In Firestore, create collection "users" with doc:
+  { uid: "<their uid>", name: "Name", email: "email", role: "admin" or "vendor" }
+
+Upload updated HTML to GitHub Pages.`
+);
+
 document.getElementById('modal').addEventListener('click', e => { if (e.target===e.currentTarget) closeModal(); });
 
+// ── THEME TOGGLE ──
+let isLight = localStorage.getItem('dt-theme') === 'light';
+
+function applyTheme() {
+  document.body.classList.toggle('light', isLight);
+  const track = document.getElementById('toggle-track');
+  if (track) track.classList.toggle('on', isLight);
+  const lbl = document.getElementById('t-label');
+  const lbl2 = document.getElementById('t-label2');
+  if (lbl) lbl.textContent = isLight ? '☀️' : '🌙';
+  if (lbl2) lbl2.textContent = isLight ? '🌙' : '☀️';
+}
+
+window.toggleTheme = () => {
+  isLight = !isLight;
+  localStorage.setItem('dt-theme', isLight ? 'light' : 'dark');
+  applyTheme();
+};
+
+applyTheme(); // apply on load
 initFB();
 </script>
 </body>
