@@ -1,642 +1,456 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>DeployTrack — Deployment Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<title>DeployTrack — CUG & PROD Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
-  :root {
-    --bg: #0a0e1a;
-    --surface: #111827;
-    --surface2: #1a2235;
-    --border: #1f2d45;
-    --accent: #00d4ff;
-    --accent2: #7c3aed;
-    --success: #10b981;
-    --danger: #ef4444;
-    --warning: #f59e0b;
-    --text: #e2e8f0;
-    --muted: #64748b;
-    --font: 'Syne', sans-serif;
-    --mono: 'DM Mono', monospace;
-  }
+:root {
+  --bg:#070b14; --surface:#0d1424; --surface2:#121c30; --surface3:#1a2540;
+  --border:#1e2d47; --accent:#00c8ff; --accent2:#ff6b2b;
+  --success:#00d68f; --danger:#ff3d5a; --warning:#ffaa00; --rollback:#ff6b2b;
+  --text:#ddeeff; --muted:#4a6080; --font:'Syne',sans-serif; --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,200,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,255,0.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0;}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+/* ══ AUTH ══ */
+#auth-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:200;background:var(--bg);}
+.auth-wrap{width:100%;max-width:460px;padding:20px;}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:48px 44px;position:relative;overflow:hidden;box-shadow:0 0 120px rgba(0,200,255,0.06),0 40px 80px rgba(0,0,0,0.6);}
+.auth-card::before{content:'';position:absolute;top:-100px;right:-100px;width:280px;height:280px;background:radial-gradient(circle,rgba(0,200,255,0.07) 0%,transparent 70%);pointer-events:none;}
+.auth-card::after{content:'';position:absolute;bottom:-80px;left:-80px;width:220px;height:220px;background:radial-gradient(circle,rgba(255,107,43,0.05) 0%,transparent 70%);pointer-events:none;}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+.brand{display:flex;align-items:center;gap:14px;margin-bottom:6px;}
+.brand-icon{width:48px;height:48px;background:linear-gradient(135deg,var(--accent),#0088bb);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.brand-text h1{font-size:26px;font-weight:800;letter-spacing:-0.5px;}
+.brand-text h1 span{color:var(--accent);}
+.brand-text p{font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:0.08em;margin-top:3px;}
 
-  /* ── GRID BACKGROUND ── */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
+.auth-divider{height:1px;background:var(--border);margin:28px 0 26px;}
 
-  /* ──────────── AUTH SCREEN ──────────── */
-  #auth-screen {
-    position: fixed; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    z-index: 100;
-    background: var(--bg);
-  }
+.signin-label{font-size:13px;color:var(--muted);font-family:var(--mono);margin-bottom:20px;letter-spacing:0.04em;}
+.signin-label strong{color:var(--text);}
 
-  .auth-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 48px 44px;
-    width: 100%; max-width: 420px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 0 80px rgba(0,212,255,0.08);
-  }
+/* Role selector on login */
+.login-role{margin-bottom:22px;}
+.login-role label{display:block;font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:0.07em;margin-bottom:10px;}
+.role-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.role-card{
+  border:2px solid var(--border);border-radius:12px;
+  padding:16px 14px;cursor:pointer;transition:all 0.2s;text-align:center;
+  background:var(--bg);
+}
+.role-card:hover{border-color:var(--muted);background:var(--surface2);}
+.role-card.sel-admin{border-color:var(--accent);background:rgba(0,200,255,0.07);}
+.role-card.sel-vendor{border-color:var(--accent2);background:rgba(255,107,43,0.07);}
+.rc-icon{font-size:24px;display:block;margin-bottom:8px;}
+.rc-name{font-size:14px;font-weight:700;display:block;}
+.rc-desc{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:4px;display:block;}
 
-  .auth-card::before {
-    content: '';
-    position: absolute;
-    top: -60px; left: -60px;
-    width: 200px; height: 200px;
-    background: radial-gradient(circle, rgba(0,212,255,0.12) 0%, transparent 70%);
-    pointer-events: none;
-  }
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:7px;letter-spacing:0.07em;font-family:var(--mono);}
+.field input{width:100%;padding:12px 15px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:border-color 0.2s;}
+.field input:focus{border-color:var(--accent);}
+.field input::placeholder{color:var(--muted);}
 
-  .auth-logo {
-    display: flex; align-items: center; gap: 10px;
-    margin-bottom: 32px;
-  }
+.btn-primary{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),#007aab);border:none;border-radius:10px;color:#000;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;transition:opacity 0.2s,transform 0.1s;letter-spacing:0.02em;}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px);}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
 
-  .auth-logo .dot-grid {
-    display: grid; grid-template-columns: repeat(3,6px); gap: 3px;
-  }
-  .auth-logo .dot-grid span {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--accent);
-    animation: pulse-dot 2s infinite;
-  }
-  .auth-logo .dot-grid span:nth-child(2) { animation-delay: 0.2s; background: var(--accent2); }
-  .auth-logo .dot-grid span:nth-child(3) { animation-delay: 0.4s; }
-  .auth-logo .dot-grid span:nth-child(5) { animation-delay: 0.3s; background: var(--accent2); }
-  @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.auth-note{margin-top:18px;text-align:center;font-size:11px;color:var(--muted);font-family:var(--mono);line-height:1.6;}
+.auth-note span{color:var(--accent);}
 
-  .auth-logo h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
-  .auth-logo h1 span { color: var(--accent); }
+.auth-error{background:rgba(255,61,90,0.1);border:1px solid rgba(255,61,90,0.3);color:#fca5a5;border-radius:8px;padding:11px 15px;font-size:12px;margin-bottom:16px;display:none;font-family:var(--mono);line-height:1.5;}
 
-  .auth-tabs {
-    display: flex; gap: 4px;
-    background: var(--bg);
-    border-radius: 10px; padding: 4px;
-    margin-bottom: 28px;
-  }
+/* ══ APP ══ */
+#app{display:none;min-height:100vh;position:relative;z-index:1;}
 
-  .auth-tab {
-    flex: 1; padding: 9px;
-    border: none; border-radius: 8px;
-    background: transparent; color: var(--muted);
-    font-family: var(--font); font-size: 14px; font-weight: 600;
-    cursor: pointer; transition: all 0.2s;
-  }
-  .auth-tab.active { background: var(--surface2); color: var(--text); }
+.header{background:rgba(13,20,36,0.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:62px;position:sticky;top:0;z-index:50;}
+.hdr-logo{display:flex;align-items:center;gap:10px;}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--success);animation:liveping 2s infinite;}
+@keyframes liveping{0%{box-shadow:0 0 0 0 rgba(0,214,143,0.5);}70%{box-shadow:0 0 0 9px rgba(0,214,143,0);}100%{box-shadow:0 0 0 0 rgba(0,214,143,0);}}
+.hdr-logo span{font-size:18px;font-weight:800;letter-spacing:-0.3px;}
+.hdr-logo span em{color:var(--accent);font-style:normal;}
 
-  .field { margin-bottom: 18px; }
-  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 7px; letter-spacing: 0.05em; font-family: var(--mono); }
-  .field input, .field select {
-    width: 100%; padding: 12px 14px;
-    background: var(--bg); border: 1px solid var(--border);
-    border-radius: 10px; color: var(--text);
-    font-family: var(--mono); font-size: 14px;
-    outline: none; transition: border-color 0.2s;
-  }
-  .field input:focus, .field select:focus { border-color: var(--accent); }
-  .field select option { background: var(--bg); }
+.hdr-right{display:flex;align-items:center;gap:12px;}
+.user-chip{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 13px;}
+.uname{font-size:12px;font-family:var(--mono);}
+.role-pill{font-size:10px;padding:3px 9px;border-radius:5px;font-weight:700;letter-spacing:0.06em;}
+.role-pill.admin{background:rgba(0,200,255,0.15);color:var(--accent);}
+.role-pill.vendor{background:rgba(255,107,43,0.15);color:var(--accent2);}
+.btn-logout{background:transparent;border:1px solid var(--border);color:var(--muted);padding:7px 15px;border-radius:8px;font-family:var(--font);font-size:12px;cursor:pointer;transition:all 0.2s;}
+.btn-logout:hover{border-color:var(--danger);color:var(--danger);}
 
-  .btn-primary {
-    width: 100%; padding: 14px;
-    background: linear-gradient(135deg, var(--accent), #0099bb);
-    border: none; border-radius: 10px;
-    color: #000; font-family: var(--font);
-    font-size: 15px; font-weight: 700;
-    cursor: pointer; transition: opacity 0.2s, transform 0.1s;
-    letter-spacing: 0.02em;
-  }
-  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-  .btn-primary:active { transform: translateY(0); }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+/* MAIN */
+.main{padding:28px;max-width:1800px;margin:0 auto;}
+.demo-banner{background:rgba(255,170,0,0.08);border:1px solid rgba(255,170,0,0.25);border-radius:10px;padding:12px 18px;margin-bottom:20px;font-size:12px;font-family:var(--mono);color:#fcd34d;display:none;}
+.demo-banner a{color:var(--accent);cursor:pointer;text-decoration:underline;}
 
-  .auth-error {
-    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
-    color: #fca5a5; border-radius: 8px; padding: 10px 14px;
-    font-size: 13px; margin-bottom: 16px; display: none;
-    font-family: var(--mono);
-  }
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden;}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;}
+.s-total::after{background:var(--accent);}
+.s-dep::after{background:var(--success);}
+.s-roll::after{background:var(--rollback);}
+.s-pend::after{background:var(--warning);}
+.s-reat::after{background:#a78bfa;}
+.stat-label{font-size:10px;color:var(--muted);letter-spacing:0.08em;margin-bottom:8px;font-family:var(--mono);}
+.stat-value{font-size:32px;font-weight:800;line-height:1;}
+.s-total .stat-value{color:var(--accent);}
+.s-dep .stat-value{color:var(--success);}
+.s-roll .stat-value{color:var(--rollback);}
+.s-pend .stat-value{color:var(--warning);}
+.s-reat .stat-value{color:#a78bfa;}
 
-  /* ──────────── APP SHELL ──────────── */
-  #app { display: none; min-height: 100vh; position: relative; z-index: 1; }
+/* ENV TABS */
+.env-nav{display:flex;gap:6px;margin-bottom:0;}
+.env-btn{padding:10px 34px;border:2px solid var(--border);border-radius:10px 10px 0 0;background:transparent;color:var(--muted);font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;border-bottom:none;letter-spacing:0.04em;}
+.env-btn:hover{color:var(--text);}
+.env-btn.ac{background:var(--surface2);color:var(--accent);border-color:var(--accent);}
+.env-btn.ap{background:var(--surface2);color:var(--accent2);border-color:var(--accent2);}
+.env-btn.au{background:var(--surface2);color:var(--success);border-color:var(--success);}
 
-  /* HEADER */
-  .header {
-    background: rgba(17,24,39,0.8);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    padding: 0 32px;
-    display: flex; align-items: center; justify-content: space-between;
-    height: 64px; position: sticky; top: 0; z-index: 50;
-  }
+/* QUARTER PANEL */
+.q-panel{background:var(--surface);border:1px solid var(--border);border-radius:0 12px 12px 12px;padding:14px 16px 16px;margin-bottom:20px;}
+.q-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:13px;}
+.q-btn{padding:7px 20px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--muted);font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.q-btn:hover{color:var(--text);}
+.q-btn.active{background:var(--surface3);color:var(--text);border-color:var(--border);}
+.q-btn small{opacity:0.5;font-size:9px;}
+.fy-label{font-size:11px;font-family:var(--mono);color:var(--muted);margin-left:auto;background:var(--surface3);border:1px solid var(--border);padding:4px 11px;border-radius:6px;}
 
-  .header-logo { display: flex; align-items: center; gap: 10px; }
-  .header-logo .pulse {
-    width: 10px; height: 10px; border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 0 0 rgba(0,212,255,0.4);
-    animation: ping 2s infinite;
-  }
-  @keyframes ping {
-    0% { box-shadow: 0 0 0 0 rgba(0,212,255,0.4); }
-    70% { box-shadow: 0 0 0 10px rgba(0,212,255,0); }
-    100% { box-shadow: 0 0 0 0 rgba(0,212,255,0); }
-  }
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.search-box{flex:1;min-width:200px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 15px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;transition:border-color 0.2s;}
+.search-box:focus{border-color:var(--accent);}
+.search-box::placeholder{color:var(--muted);}
+.btn-add{background:linear-gradient(135deg,var(--accent),#007aab);border:none;border-radius:9px;color:#000;padding:9px 20px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;transition:opacity 0.2s,transform 0.1s;white-space:nowrap;}
+.btn-add:hover{opacity:0.9;transform:translateY(-1px);}
+.btn-export{background:transparent;border:1px solid var(--border);color:var(--muted);padding:9px 16px;border-radius:9px;font-family:var(--font);font-size:12px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.btn-export:hover{border-color:var(--success);color:var(--success);}
 
-  .header-logo span { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; }
-  .header-logo span em { color: var(--accent); font-style: normal; }
+/* TABLE */
+.table-outer{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.table-scroll{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:1800px;}
+thead tr{background:var(--surface2);border-bottom:2px solid var(--border);}
+th{padding:12px 13px;text-align:left;font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:0.07em;white-space:nowrap;font-weight:500;}
+tbody tr{border-bottom:1px solid rgba(30,45,71,0.5);transition:background 0.15s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:rgba(0,200,255,0.03);}
+td{padding:11px 13px;font-size:12px;vertical-align:middle;}
+.td-sr{color:var(--muted);font-family:var(--mono);font-size:11px;text-align:center;}
+.td-cr{font-family:var(--mono);color:var(--accent);font-size:11px;white-space:nowrap;font-weight:500;}
+.td-app{font-weight:700;white-space:nowrap;}
+.td-date{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap;}
+.td-trunc{max-width:150px;}
+.td-trunc span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;font-size:11px;}
 
-  .header-right { display: flex; align-items: center; gap: 16px; }
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;font-size:10px;font-weight:700;font-family:var(--mono);letter-spacing:0.05em;white-space:nowrap;}
+.badge::before{content:'●';font-size:7px;}
+.badge.deployed{background:rgba(0,214,143,0.12);color:var(--success);border:1px solid rgba(0,214,143,0.2);}
+.badge.rollback{background:rgba(255,107,43,0.12);color:var(--rollback);border:1px solid rgba(255,107,43,0.2);}
+.badge.pending{background:rgba(255,170,0,0.12);color:var(--warning);border:1px solid rgba(255,170,0,0.2);}
 
-  .user-badge {
-    display: flex; align-items: center; gap: 8px;
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 6px 12px;
-    font-size: 13px; font-family: var(--mono);
-  }
-  .user-badge .role-tag {
-    font-size: 10px; padding: 2px 7px; border-radius: 4px;
-    background: rgba(0,212,255,0.15); color: var(--accent);
-    font-weight: 600; letter-spacing: 0.05em;
-  }
-  .user-badge .role-tag.vendor { background: rgba(124,58,237,0.15); color: #a78bfa; }
+.yn{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-family:var(--mono);font-weight:700;}
+.yn.yes{background:rgba(0,214,143,0.12);color:var(--success);}
+.yn.no{background:rgba(255,61,90,0.12);color:var(--danger);}
+.yn.na{background:rgba(74,96,128,0.2);color:var(--muted);}
 
-  .btn-logout {
-    background: transparent; border: 1px solid var(--border);
-    color: var(--muted); padding: 7px 14px; border-radius: 8px;
-    font-family: var(--font); font-size: 13px; cursor: pointer;
-    transition: all 0.2s;
-  }
-  .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+.action-btns{display:flex;gap:5px;}
+.btn-icon{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 9px;border-radius:6px;font-size:11px;cursor:pointer;transition:all 0.2s;font-family:var(--mono);white-space:nowrap;}
+.btn-icon:hover{border-color:var(--accent);color:var(--accent);}
+.btn-icon.del:hover{border-color:var(--danger);color:var(--danger);}
+.btn-icon:disabled{opacity:0.2;cursor:not-allowed;}
+.empty-state{text-align:center;padding:70px 20px;color:var(--muted);font-family:var(--mono);font-size:13px;}
+.empty-state .ei{font-size:40px;margin-bottom:12px;opacity:0.35;display:block;}
 
-  /* MAIN */
-  .main { padding: 32px; max-width: 1400px; margin: 0 auto; }
+/* ══ MODAL ══ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.78);backdrop-filter:blur(8px);display:none;align-items:flex-start;justify-content:center;z-index:300;padding:20px;overflow-y:auto;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:34px;width:100%;max-width:860px;box-shadow:0 28px 90px rgba(0,0,0,0.65);animation:slideUp 0.25s ease;margin:auto;}
+@keyframes slideUp{from{transform:translateY(28px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.modal-header h2{font-size:19px;font-weight:700;}
+.modal-header .env-tag{font-size:11px;padding:3px 10px;border-radius:5px;font-family:var(--mono);font-weight:700;background:rgba(0,200,255,0.12);color:var(--accent);}
+.modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:7px;transition:all 0.2s;}
+.modal-close:hover{background:var(--surface2);color:var(--text);}
 
-  /* STATS */
-  .stats-row {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
-    margin-bottom: 32px;
-  }
+.form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.form-grid .c2{grid-column:span 2;}
+.form-grid .c3{grid-column:span 3;}
 
-  .stat-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 14px; padding: 20px 22px;
-    position: relative; overflow: hidden;
-  }
-  .stat-card::after {
-    content: '';
-    position: absolute; bottom: 0; left: 0; right: 0;
-    height: 2px;
-  }
-  .stat-card.total::after { background: var(--accent); }
-  .stat-card.success::after { background: var(--success); }
-  .stat-card.failed::after { background: var(--danger); }
-  .stat-card.pending::after { background: var(--warning); }
+.vendor-notice{background:rgba(255,107,43,0.08);border:1px solid rgba(255,107,43,0.22);border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:11px;font-family:var(--mono);color:var(--accent2);display:none;}
 
-  .stat-label { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; margin-bottom: 10px; font-family: var(--mono); }
-  .stat-value { font-size: 36px; font-weight: 800; line-height: 1; }
-  .stat-card.total .stat-value { color: var(--accent); }
-  .stat-card.success .stat-value { color: var(--success); }
-  .stat-card.failed .stat-value { color: var(--danger); }
-  .stat-card.pending .stat-value { color: var(--warning); }
+.modal-actions{display:flex;gap:10px;margin-top:24px;}
+.btn-cancel{flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:9px;color:var(--muted);font-family:var(--font);font-size:13px;cursor:pointer;transition:all 0.2s;}
+.btn-cancel:hover{border-color:var(--text);color:var(--text);}
+.modal-actions .btn-primary{flex:2;}
 
-  /* TABS */
-  .tabs-bar {
-    display: flex; align-items: center; gap: 4px;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; padding: 6px;
-    margin-bottom: 24px; flex-wrap: wrap;
-  }
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 20px;font-family:var(--mono);font-size:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:999;transform:translateY(80px);opacity:0;transition:all 0.3s;display:flex;align-items:center;gap:8px;max-width:340px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.ok{border-left:3px solid var(--success);}
+.toast.err{border-left:3px solid var(--danger);}
 
-  .tab-btn {
-    padding: 9px 20px; border: none; border-radius: 8px;
-    background: transparent; color: var(--muted);
-    font-family: var(--font); font-size: 13px; font-weight: 600;
-    cursor: pointer; transition: all 0.2s; letter-spacing: 0.02em;
-  }
-  .tab-btn:hover { color: var(--text); }
-  .tab-btn.active {
-    background: var(--surface2); color: var(--accent);
-    border: 1px solid rgba(0,212,255,0.2);
-    box-shadow: 0 0 12px rgba(0,212,255,0.08);
-  }
+.loader{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,200,255,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
 
-  /* TOOLBAR */
-  .toolbar {
-    display: flex; align-items: center; gap: 12px;
-    margin-bottom: 20px; flex-wrap: wrap;
-  }
-
-  .search-box {
-    flex: 1; min-width: 200px;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 10px 16px;
-    color: var(--text); font-family: var(--mono); font-size: 13px;
-    outline: none; transition: border-color 0.2s;
-  }
-  .search-box:focus { border-color: var(--accent); }
-  .search-box::placeholder { color: var(--muted); }
-
-  .btn-add {
-    background: linear-gradient(135deg, var(--accent), #0099bb);
-    border: none; border-radius: 10px;
-    color: #000; padding: 10px 20px;
-    font-family: var(--font); font-size: 13px; font-weight: 700;
-    cursor: pointer; transition: opacity 0.2s, transform 0.1s;
-    white-space: nowrap;
-  }
-  .btn-add:hover { opacity: 0.9; transform: translateY(-1px); }
-
-  /* TABLE */
-  .table-wrap {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 14px; overflow: hidden;
-  }
-
-  table { width: 100%; border-collapse: collapse; }
-
-  thead tr {
-    background: var(--surface2);
-    border-bottom: 1px solid var(--border);
-  }
-
-  th {
-    padding: 14px 18px; text-align: left;
-    font-size: 11px; color: var(--muted);
-    font-family: var(--mono); letter-spacing: 0.08em;
-    font-weight: 500;
-  }
-
-  tbody tr {
-    border-bottom: 1px solid var(--border);
-    transition: background 0.15s;
-  }
-  tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: rgba(0,212,255,0.03); }
-
-  td {
-    padding: 14px 18px; font-size: 13px;
-    vertical-align: middle;
-  }
-
-  .cr-no {
-    font-family: var(--mono); color: var(--accent);
-    font-size: 12px; font-weight: 500;
-  }
-
-  .desc-cell { max-width: 220px; }
-  .desc-text {
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    max-width: 220px; display: block;
-  }
-
-  .badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 4px 10px; border-radius: 6px;
-    font-size: 11px; font-weight: 700; font-family: var(--mono);
-    letter-spacing: 0.05em;
-  }
-  .badge.success { background: rgba(16,185,129,0.12); color: var(--success); border: 1px solid rgba(16,185,129,0.2); }
-  .badge.failure { background: rgba(239,68,68,0.12); color: var(--danger); border: 1px solid rgba(239,68,68,0.2); }
-  .badge.pending { background: rgba(245,158,11,0.12); color: var(--warning); border: 1px solid rgba(245,158,11,0.2); }
-  .badge::before { content: '●'; font-size: 8px; }
-
-  .env-badge {
-    display: inline-block; padding: 3px 9px; border-radius: 5px;
-    font-size: 11px; font-family: var(--mono); font-weight: 600;
-    background: rgba(124,58,237,0.15); color: #a78bfa;
-    border: 1px solid rgba(124,58,237,0.2);
-  }
-
-  .action-btns { display: flex; gap: 8px; }
-  .btn-icon {
-    background: transparent; border: 1px solid var(--border);
-    color: var(--muted); padding: 6px 10px; border-radius: 7px;
-    font-size: 13px; cursor: pointer; transition: all 0.2s;
-    font-family: var(--mono);
-  }
-  .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
-  .btn-icon.del:hover { border-color: var(--danger); color: var(--danger); }
-
-  .empty-state {
-    text-align: center; padding: 60px 20px;
-    color: var(--muted); font-family: var(--mono); font-size: 14px;
-  }
-  .empty-state .icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
-
-  /* MODAL */
-  .modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
-    display: none; align-items: center; justify-content: center;
-    z-index: 200; padding: 20px;
-  }
-  .modal-overlay.open { display: flex; }
-
-  .modal {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 18px; padding: 36px; width: 100%; max-width: 520px;
-    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
-    animation: slideUp 0.25s ease;
-  }
-  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
-  .modal-header h2 { font-size: 20px; font-weight: 700; }
-  .modal-close { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; line-height: 1; }
-  .modal-close:hover { color: var(--text); }
-
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .form-grid .full { grid-column: 1 / -1; }
-
-  .modal-actions { display: flex; gap: 12px; margin-top: 28px; }
-  .btn-secondary {
-    flex: 1; padding: 12px;
-    background: transparent; border: 1px solid var(--border);
-    border-radius: 10px; color: var(--muted);
-    font-family: var(--font); font-size: 14px; cursor: pointer;
-    transition: all 0.2s;
-  }
-  .btn-secondary:hover { border-color: var(--text); color: var(--text); }
-
-  .modal-actions .btn-primary { flex: 2; }
-
-  /* TOAST */
-  .toast {
-    position: fixed; bottom: 28px; right: 28px;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; padding: 14px 20px;
-    font-family: var(--mono); font-size: 13px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-    z-index: 999; transform: translateY(100px); opacity: 0;
-    transition: all 0.3s; display: flex; align-items: center; gap: 10px;
-  }
-  .toast.show { transform: translateY(0); opacity: 1; }
-  .toast.ok { border-left: 3px solid var(--success); }
-  .toast.err { border-left: 3px solid var(--danger); }
-
-  /* LOADER */
-  .loader {
-    display: inline-block; width: 16px; height: 16px;
-    border: 2px solid rgba(0,212,255,0.2);
-    border-top-color: var(--accent);
-    border-radius: 50%; animation: spin 0.7s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* FIREBASE SETUP BANNER */
-  .setup-banner {
-    background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3);
-    border-radius: 12px; padding: 16px 20px; margin-bottom: 24px;
-    font-size: 13px; font-family: var(--mono); color: #fcd34d;
-    display: none;
-  }
-  .setup-banner a { color: var(--accent); }
-
-  @media (max-width: 768px) {
-    .stats-row { grid-template-columns: 1fr 1fr; }
-    .main { padding: 16px; }
-    .header { padding: 0 16px; }
-    .form-grid { grid-template-columns: 1fr; }
-    .form-grid .full { grid-column: 1; }
-  }
+@media(max-width:768px){
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .main{padding:12px;}
+  .header{padding:0 14px;}
+  .form-grid{grid-template-columns:1fr 1fr;}
+  .form-grid .c3{grid-column:span 2;}
+  .env-btn{padding:9px 18px;font-size:12px;}
+  .auth-card{padding:32px 24px;}
+}
 </style>
 </head>
 <body>
 
-<!-- ══ AUTH SCREEN ══ -->
+<!-- ══════════════ AUTH ══════════════ -->
 <div id="auth-screen">
-  <div class="auth-card">
-    <div class="auth-logo">
-      <div class="dot-grid">
-        <span></span><span></span><span></span>
-        <span></span><span></span><span></span>
-        <span></span><span></span><span></span>
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="brand">
+        <div class="brand-icon">🚀</div>
+        <div class="brand-text">
+          <h1>Deploy<span>Track</span></h1>
+          <p>CUG · PROD · UAT DEPLOYMENT TRACKER</p>
+        </div>
       </div>
-      <h1>Deploy<span>Track</span></h1>
-    </div>
+      <div class="auth-divider"></div>
 
-    <div class="auth-tabs">
-      <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
-      <button class="auth-tab" onclick="switchTab('signup')">Sign Up</button>
-    </div>
+      <p class="signin-label">Sign in with your <strong>credentials provided by Admin</strong></p>
 
-    <div id="auth-error" class="auth-error"></div>
-
-    <!-- Login -->
-    <div id="login-form">
-      <div class="field">
-        <label>EMAIL</label>
-        <input type="email" id="login-email" placeholder="you@company.com" />
+      <!-- ROLE SELECTOR -->
+      <div class="login-role">
+        <label>SELECT YOUR ROLE</label>
+        <div class="role-cards">
+          <div class="role-card sel-admin" id="rc-admin" onclick="selectRole('admin')">
+            <span class="rc-icon">🛡️</span>
+            <span class="rc-name">Admin</span>
+            <span class="rc-desc">Full access — Add · Edit · Delete</span>
+          </div>
+          <div class="role-card" id="rc-vendor" onclick="selectRole('vendor')">
+            <span class="rc-icon">🏢</span>
+            <span class="rc-name">Vendor</span>
+            <span class="rc-desc">Add new entries only</span>
+          </div>
+        </div>
       </div>
+
+      <div id="auth-error" class="auth-error"></div>
+
       <div class="field">
+        <label>EMAIL ADDRESS</label>
+        <input type="email" id="l-email" placeholder="you@company.com"/>
+      </div>
+      <div class="field" style="margin-bottom:22px">
         <label>PASSWORD</label>
-        <input type="password" id="login-pwd" placeholder="••••••••" />
+        <input type="password" id="l-pwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
       </div>
-      <button class="btn-primary" id="login-btn" onclick="doLogin()">Sign In</button>
-    </div>
 
-    <!-- Signup -->
-    <div id="signup-form" style="display:none">
-      <div class="field">
-        <label>FULL NAME</label>
-        <input type="text" id="signup-name" placeholder="John Doe" />
-      </div>
-      <div class="field">
-        <label>EMAIL</label>
-        <input type="email" id="signup-email" placeholder="you@company.com" />
-      </div>
-      <div class="field">
-        <label>ROLE</label>
-        <select id="signup-role">
-          <option value="vendor">Vendor</option>
-          <option value="admin">Admin</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>PASSWORD</label>
-        <input type="password" id="signup-pwd" placeholder="min 6 characters" />
-      </div>
-      <button class="btn-primary" id="signup-btn" onclick="doSignup()">Create Account</button>
+      <button class="btn-primary" id="login-btn" onclick="doLogin()">Sign In →</button>
+
+      <p class="auth-note">
+        Don't have access? <span>Contact your Admin</span> to get credentials.<br/>
+        Accounts are managed on the backend — no self sign-up.
+      </p>
     </div>
   </div>
 </div>
 
-<!-- ══ MAIN APP ══ -->
+<!-- ══════════════ APP ══════════════ -->
 <div id="app">
   <header class="header">
-    <div class="header-logo">
-      <div class="pulse"></div>
+    <div class="hdr-logo">
+      <div class="live-dot"></div>
       <span>Deploy<em>Track</em></span>
     </div>
-    <div class="header-right">
-      <div class="user-badge">
-        <span id="header-name">User</span>
-        <span class="role-tag" id="header-role">ADMIN</span>
+    <div class="hdr-right">
+      <div class="user-chip">
+        <span class="uname" id="hdr-name">User</span>
+        <span class="role-pill admin" id="hdr-role">ADMIN</span>
       </div>
-      <button class="btn-logout" onclick="doLogout()">Logout</button>
+      <button class="btn-logout" onclick="doLogout()">Sign Out</button>
     </div>
   </header>
 
   <main class="main">
-    <div class="setup-banner" id="setup-banner">
-      ⚠ Running in <strong>Demo Mode</strong> — Firebase not configured.
-      Data is stored locally and resets on refresh.
-      <a href="#" onclick="showFirebaseHelp()">How to connect Firebase →</a>
+    <div class="demo-banner" id="demo-banner">
+      ⚡ <strong>Demo Mode</strong> — Firebase not configured. Data resets on refresh. &nbsp;
+      <a onclick="showFBHelp()">How to connect Firebase →</a>
     </div>
 
     <!-- STATS -->
     <div class="stats-row">
-      <div class="stat-card total">
-        <div class="stat-label">TOTAL DEPLOYMENTS</div>
-        <div class="stat-value" id="stat-total">0</div>
-      </div>
-      <div class="stat-card success">
-        <div class="stat-label">SUCCESS</div>
-        <div class="stat-value" id="stat-success">0</div>
-      </div>
-      <div class="stat-card failed">
-        <div class="stat-label">FAILED</div>
-        <div class="stat-value" id="stat-failed">0</div>
-      </div>
-      <div class="stat-card pending">
-        <div class="stat-label">PENDING</div>
-        <div class="stat-value" id="stat-pending">0</div>
-      </div>
+      <div class="stat-card s-total"><div class="stat-label">TOTAL</div><div class="stat-value" id="st-total">0</div></div>
+      <div class="stat-card s-dep"><div class="stat-label">DEPLOYED</div><div class="stat-value" id="st-dep">0</div></div>
+      <div class="stat-card s-roll"><div class="stat-label">ROLLBACK</div><div class="stat-value" id="st-roll">0</div></div>
+      <div class="stat-card s-pend"><div class="stat-label">PENDING</div><div class="stat-value" id="st-pend">0</div></div>
+      <div class="stat-card s-reat"><div class="stat-label">REATTEMPTED</div><div class="stat-value" id="st-reat">0</div></div>
     </div>
 
-    <!-- TABS -->
-    <div class="tabs-bar" id="tabs-bar">
-      <button class="tab-btn active" data-tab="ALL" onclick="switchEnvTab(this,'ALL')">All</button>
-      <button class="tab-btn" data-tab="Q1" onclick="switchEnvTab(this,'Q1')">Q1</button>
-      <button class="tab-btn" data-tab="Q2" onclick="switchEnvTab(this,'Q2')">Q2</button>
-      <button class="tab-btn" data-tab="Q3" onclick="switchEnvTab(this,'Q3')">Q3</button>
-      <button class="tab-btn" data-tab="Q4" onclick="switchEnvTab(this,'Q4')">Q4</button>
-      <button class="tab-btn" data-tab="CUG" onclick="switchEnvTab(this,'CUG')">CUG</button>
-      <button class="tab-btn" data-tab="PROD" onclick="switchEnvTab(this,'PROD')">PROD</button>
-      <button class="tab-btn" data-tab="UAT" onclick="switchEnvTab(this,'UAT')">UAT</button>
+    <!-- ENV TABS: CUG / PROD / UAT -->
+    <div class="env-nav">
+      <button class="env-btn ac" id="env-cug" onclick="switchEnv('CUG')">📱 CUG</button>
+      <button class="env-btn" id="env-prod" onclick="switchEnv('PROD')">🏭 PROD</button>
+      <button class="env-btn" id="env-uat" onclick="switchEnv('UAT')">🧪 UAT</button>
     </div>
 
-    <!-- TOOLBAR -->
-    <div class="toolbar">
-      <input class="search-box" type="text" placeholder="🔍  Search CR No, Description..." oninput="filterTable(this.value)" />
-      <button class="btn-add" id="add-btn" onclick="openModal()">+ New Deployment</button>
+    <!-- QUARTER PANEL -->
+    <div class="q-panel">
+      <div class="q-row">
+        <button class="q-btn active" data-q="ALL" onclick="switchQ(this,'ALL')">All Quarters</button>
+        <button class="q-btn" data-q="Q1" onclick="switchQ(this,'Q1')">Q1 <small>Apr–Jun</small></button>
+        <button class="q-btn" data-q="Q2" onclick="switchQ(this,'Q2')">Q2 <small>Jul–Sep</small></button>
+        <button class="q-btn" data-q="Q3" onclick="switchQ(this,'Q3')">Q3 <small>Oct–Dec</small></button>
+        <button class="q-btn" data-q="Q4" onclick="switchQ(this,'Q4')">Q4 <small>Jan–Mar</small></button>
+        <span class="fy-label" id="fy-label">FY 2025–26</span>
+      </div>
+      <div class="toolbar">
+        <input class="search-box" type="text" placeholder="🔍  Search Application, CR No, Purpose, Remarks..." oninput="doSearch(this.value)"/>
+        <button class="btn-export" onclick="exportCSV()">⬇ Export CSV</button>
+        <button class="btn-add" onclick="openModal()">+ Add Deployment</button>
+      </div>
     </div>
 
     <!-- TABLE -->
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>CR NO</th>
-            <th>DESCRIPTION</th>
-            <th>ENVIRONMENT</th>
-            <th>DATE</th>
-            <th>STATUS</th>
-            <th>REMARKS</th>
-            <th>ACTIONS</th>
-          </tr>
-        </thead>
-        <tbody id="table-body">
-        </tbody>
-      </table>
+    <div class="table-outer">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:center">SR NO.</th>
+              <th>CR NO</th>
+              <th>APPLICATION</th>
+              <th>PURPOSE OF DEPLOYMENT</th>
+              <th>APPROVAL DATE (BANK)</th>
+              <th>DEPLOYMENT DATE</th>
+              <th>STATUS</th>
+              <th>REATTEMPTED DATE</th>
+              <th>IMPACT IN PROD</th>
+              <th>REASON FAILURE / SUCCESS</th>
+              <th>UAT DATE</th>
+              <th>PASS LOG</th>
+              <th>PROD FIX / CF</th>
+              <th>APK VERSION</th>
+              <th>REMARKS</th>
+              <th>ADDED BY</th>
+              <th>ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
       <div class="empty-state" id="empty-state" style="display:none">
-        <div class="icon">📭</div>
-        No deployments found for this filter.
+        <span class="ei">📭</span>
+        No deployment entries found.<br/>Add a new one using the button above.
       </div>
     </div>
   </main>
 </div>
 
-<!-- ══ ADD / EDIT MODAL ══ -->
+<!-- ══════════════ MODAL ══════════════ -->
 <div class="modal-overlay" id="modal">
   <div class="modal">
     <div class="modal-header">
-      <h2 id="modal-title">New Deployment</h2>
+      <div style="display:flex;align-items:center;gap:10px">
+        <h2 id="modal-title">Add Deployment</h2>
+        <span class="env-tag" id="modal-env-tag">CUG</span>
+      </div>
       <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="vendor-notice" id="vendor-notice">
+      ℹ️ <strong>Vendor Access:</strong> You can add new entries. Only Admins can edit or delete records.
     </div>
     <div class="form-grid">
       <div class="field">
-        <label>CR NUMBER</label>
-        <input type="text" id="f-cr" placeholder="CR-2024-001" />
+        <label>CR NO *</label>
+        <input type="text" id="f-cr" placeholder="CR-2025-001"/>
       </div>
       <div class="field">
-        <label>ENVIRONMENT</label>
-        <select id="f-env">
-          <option value="Q1">Q1</option>
-          <option value="Q2">Q2</option>
-          <option value="Q3">Q3</option>
-          <option value="Q4">Q4</option>
-          <option value="CUG">CUG</option>
-          <option value="PROD">PROD</option>
-          <option value="UAT">UAT</option>
-        </select>
+        <label>APPLICATION *</label>
+        <input type="text" id="f-app" placeholder="Mobile Banking App"/>
       </div>
-      <div class="field full">
-        <label>DESCRIPTION</label>
-        <input type="text" id="f-desc" placeholder="Brief description of the deployment..." />
+      <div class="field">
+        <label>APK / BUILD VERSION</label>
+        <input type="text" id="f-apk" placeholder="v3.2.0"/>
+      </div>
+      <div class="field c3">
+        <label>PURPOSE OF DEPLOYMENT *</label>
+        <input type="text" id="f-purpose" placeholder="Describe the purpose of this deployment..."/>
+      </div>
+      <div class="field">
+        <label>DATE OF APPROVAL BY BANK</label>
+        <input type="date" id="f-approval"/>
+      </div>
+      <div class="field">
+        <label>DEPLOYMENT DATE</label>
+        <input type="date" id="f-deploy"/>
       </div>
       <div class="field">
         <label>STATUS</label>
-        <select id="f-status">
+        <select id="f-status" style="width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;">
           <option value="Pending">Pending</option>
-          <option value="Success">Success</option>
-          <option value="Failure">Failure</option>
+          <option value="Deployed">Deployed</option>
+          <option value="Rollback">Rollback</option>
         </select>
       </div>
       <div class="field">
-        <label>DATE</label>
-        <input type="date" id="f-date" />
+        <label>REATTEMPTED DATE</label>
+        <input type="date" id="f-reattempt"/>
       </div>
-      <div class="field full">
+      <div class="field">
+        <label>UAT DATE OF PRODUCT</label>
+        <input type="date" id="f-uat"/>
+      </div>
+      <div class="field">
+        <label>PASS LOG RECEIVED</label>
+        <select id="f-passlog" style="width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;">
+          <option value="N/A">N/A</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </div>
+      <div class="field c2">
+        <label>IMPACT IN PROD</label>
+        <input type="text" id="f-impact" placeholder="e.g. None / Minor 2hr downtime"/>
+      </div>
+      <div class="field c3">
+        <label>REASON OF FAILURE / SUCCESS</label>
+        <input type="text" id="f-reason" placeholder="Root cause or success note..."/>
+      </div>
+      <div class="field">
+        <label>PROD FIX / CF</label>
+        <input type="text" id="f-profix" placeholder="Hotfix CF-123"/>
+      </div>
+      <div class="field c2">
         <label>REMARKS</label>
-        <input type="text" id="f-remarks" placeholder="Any notes or comments..." />
+        <input type="text" id="f-remarks" placeholder="Any additional notes..."/>
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn-primary" onclick="saveDeployment()">Save Deployment</button>
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveEntry()">Save Deployment</button>
     </div>
   </div>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<!-- ══ FIREBASE SDK ══ -->
+<!-- ══════════════ SCRIPT ══════════════ -->
 <script type="module">
-// ════════════════════════════════════════════════════════
-//   🔥 FIREBASE CONFIGURATION
-//   Replace the config below with your Firebase project config.
-//   Get it from: Firebase Console → Project Settings → Your Apps
-// ════════════════════════════════════════════════════════
 
+// ╔══════════════════════════════════════════════════╗
+// ║   FIREBASE CONFIG — paste your config here       ║
+// ╚══════════════════════════════════════════════════╝
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyAuUJwr7auGmIaG50wh-vRo3OhFsA8lpCw",
@@ -648,273 +462,300 @@ const firebaseConfig = {
   measurementId: "G-D3542L25S6"
 };
 
-// ════════════════════════════════════════════════════════
-//   APP STATE
-// ════════════════════════════════════════════════════════
-let firebaseReady = false;
-let db = null, auth = null;
+// ── STATE ──
+let fbReady = false, db = null, auth = null;
 let currentUser = null;
-let currentTab = 'ALL';
-let editingId = null;
+let currentEnv = 'CUG', currentQ = 'ALL', searchVal = '', editingId = null;
+let selectedRole = 'admin';   // role chosen on login screen
+let allRows = [];
 
-// In-memory store for demo mode
-let demoDeployments = [
-  { id:'d1', crNo:'CR-2024-001', description:'API Gateway upgrade to v2', env:'PROD', date:'2024-03-01', status:'Success', remarks:'Smooth rollout', createdBy:'admin@demo.com' },
-  { id:'d2', crNo:'CR-2024-002', description:'Auth service patch 2.1.3', env:'CUG', date:'2024-03-05', status:'Failure', remarks:'Rollback triggered - DB timeout', createdBy:'vendor@demo.com' },
-  { id:'d3', crNo:'CR-2024-003', description:'Frontend bundle optimization', env:'Q1', date:'2024-03-10', status:'Pending', remarks:'Awaiting QA sign-off', createdBy:'vendor@demo.com' },
-  { id:'d4', crNo:'CR-2024-004', description:'Payment gateway integration', env:'UAT', date:'2024-03-12', status:'Success', remarks:'All tests passed', createdBy:'admin@demo.com' },
-  { id:'d5', crNo:'CR-2024-005', description:'Database migration v5→v6', env:'Q2', date:'2024-03-15', status:'Pending', remarks:'Scheduled for weekend', createdBy:'vendor@demo.com' },
+// ── DEMO DATA (financial year quarters Apr–Mar) ──
+let demoRows = [
+  { id:'d1', env:'CUG', crNo:'CR-2025-001', application:'Mobile Banking App',
+    purpose:'Login flow enhancement v2', approvalDate:'2025-04-10', deployDate:'2025-04-15',
+    status:'Deployed', reattemptDate:'', impactInProd:'None', reason:'All sanity checks passed',
+    uatDate:'2025-04-08', passLog:'Yes', prodFix:'', apkVersion:'v3.1.0',
+    remarks:'Smooth deployment', createdBy:'admin' },
+  { id:'d2', env:'CUG', crNo:'CR-2025-002', application:'UPI Module',
+    purpose:'UPI 2.0 protocol upgrade', approvalDate:'2025-04-20', deployDate:'2025-04-25',
+    status:'Rollback', reattemptDate:'2025-04-28', impactInProd:'Minor 2hr downtime',
+    reason:'DB connection timeout during migration', uatDate:'2025-04-18', passLog:'Yes',
+    prodFix:'Hotfix CF-001', apkVersion:'v3.1.1', remarks:'Reattempt done successfully', createdBy:'vendor' },
+  { id:'d3', env:'PROD', crNo:'CR-2025-003', application:'Net Banking Portal',
+    purpose:'SSL certificate renewal & security patch', approvalDate:'2025-05-01', deployDate:'2025-05-05',
+    status:'Deployed', reattemptDate:'', impactInProd:'None', reason:'Security compliance achieved',
+    uatDate:'2025-04-30', passLog:'Yes', prodFix:'', apkVersion:'v5.0.2', remarks:'', createdBy:'admin' },
+  { id:'d4', env:'CUG', crNo:'CR-2025-004', application:'Mobile Banking App',
+    purpose:'Dark mode + UI refresh', approvalDate:'2025-07-05', deployDate:'2025-07-10',
+    status:'Pending', reattemptDate:'', impactInProd:'', reason:'',
+    uatDate:'2025-07-01', passLog:'No', prodFix:'', apkVersion:'v3.2.0',
+    remarks:'Waiting for bank sign-off', createdBy:'vendor' },
+  { id:'d5', env:'PROD', crNo:'CR-2025-005', application:'NACH Module',
+    purpose:'NACH mandate processing fix', approvalDate:'2025-10-01', deployDate:'2025-10-05',
+    status:'Deployed', reattemptDate:'', impactInProd:'None', reason:'Bug fix validated in UAT',
+    uatDate:'2025-09-28', passLog:'Yes', prodFix:'', apkVersion:'v2.4.1', remarks:'', createdBy:'admin' },
+  { id:'d6', env:'UAT', crNo:'CR-2025-006', application:'Loan Module',
+    purpose:'Credit score integration testing', approvalDate:'2025-08-01', deployDate:'2025-08-03',
+    status:'Deployed', reattemptDate:'', impactInProd:'N/A', reason:'UAT passed all test cases',
+    uatDate:'2025-08-03', passLog:'Yes', prodFix:'', apkVersion:'v1.5.0', remarks:'Ready for PROD', createdBy:'admin' },
+  { id:'d7', env:'CUG', crNo:'CR-2026-001', application:'Mobile Banking App',
+    purpose:'Q4 RBI regulatory compliance update', approvalDate:'2026-01-10', deployDate:'2026-01-15',
+    status:'Deployed', reattemptDate:'', impactInProd:'None', reason:'Completed within window',
+    uatDate:'2026-01-08', passLog:'Yes', prodFix:'', apkVersion:'v3.3.0', remarks:'RBI compliance patch', createdBy:'admin' },
 ];
-let demoUser = null;
-let demoUsers = [
-  { email:'admin@demo.com', password:'admin123', name:'Admin User', role:'admin' },
+
+// Demo users — in real app these are in Firebase Auth + Firestore
+const DEMO_USERS = [
+  { email:'admin@demo.com',  password:'admin123',  name:'Admin User',  role:'admin'  },
   { email:'vendor@demo.com', password:'vendor123', name:'Vendor User', role:'vendor' },
+  { email:'admin2@demo.com', password:'admin456',  name:'Admin Two',   role:'admin'  },
 ];
 
-// ════════════════════════════════════════════════════════
-//   FIREBASE INIT
-// ════════════════════════════════════════════════════════
-async function initFirebase() {
+// ── FIREBASE INIT ──
+async function initFB() {
   try {
-    if (FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY') {
-      console.warn('Firebase not configured — running in demo mode');
-      document.getElementById('setup-banner').style.display = 'block';
+    if (FB_CONFIG.apiKey === 'YOUR_API_KEY') {
+      document.getElementById('demo-banner').style.display = 'block';
       return;
     }
     const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
-    const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
-    const { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where, serverTimestamp, orderBy } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+    const A = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+    const F = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+    const app = initializeApp(FB_CONFIG);
+    auth = A.getAuth(app);
+    db   = F.getFirestore(app);
+    fbReady = true;
+    window._fb = { ...A, ...F, auth, db };
 
-    const app = initializeApp(FIREBASE_CONFIG);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    firebaseReady = true;
-
-    window._fb = { auth, db, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where, serverTimestamp, orderBy };
-
-    window._fb.onAuthStateChanged(auth, async (user) => {
+    A.onAuthStateChanged(auth, async user => {
       if (user) {
-        const snap = await window._fb.getDocs(window._fb.query(window._fb.collection(db, 'users'), window._fb.where('uid','==',user.uid)));
-        const userData = snap.empty ? { name: user.email, role: 'vendor' } : snap.docs[0].data();
-        currentUser = { ...userData, email: user.email, uid: user.uid };
-        showApp();
-        loadDeployments();
+        // Load user record from Firestore to get name + role
+        const snap = await F.getDocs(F.query(F.collection(db,'users'), F.where('uid','==',user.uid)));
+        const ud = snap.empty ? { name: user.email, role: 'vendor' } : snap.docs[0].data();
+        // Validate role matches what user selected on login
+        if (ud.role !== selectedRole) {
+          await A.signOut(auth);
+          showErr(`Role mismatch. Your account role is "${ud.role}". Please select the correct role.`);
+          return;
+        }
+        currentUser = { ...ud, email: user.email, uid: user.uid };
+        showApp(); loadRows();
       } else {
         showAuth();
       }
     });
   } catch(e) {
-    console.error('Firebase init error:', e);
-    document.getElementById('setup-banner').style.display = 'block';
+    console.error(e);
+    document.getElementById('demo-banner').style.display = 'block';
   }
 }
 
-// ════════════════════════════════════════════════════════
-//   AUTH
-// ════════════════════════════════════════════════════════
-window.switchTab = (t) => {
-  document.getElementById('login-form').style.display = t==='login' ? '' : 'none';
-  document.getElementById('signup-form').style.display = t==='signup' ? '' : 'none';
-  document.querySelectorAll('.auth-tab').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase().includes(t==='login'?'sign in':'sign up')));
-  clearAuthError();
+// ── ROLE SELECT ──
+window.selectRole = role => {
+  selectedRole = role;
+  document.getElementById('rc-admin').className  = 'role-card' + (role==='admin'  ? ' sel-admin'  : '');
+  document.getElementById('rc-vendor').className = 'role-card' + (role==='vendor' ? ' sel-vendor' : '');
 };
 
-function showAuthError(msg) {
-  const el = document.getElementById('auth-error');
-  el.textContent = msg; el.style.display = 'block';
-}
-function clearAuthError() { document.getElementById('auth-error').style.display = 'none'; }
+// ── AUTH ──
+const showErr = m => { const e = document.getElementById('auth-error'); e.innerHTML = m; e.style.display = 'block'; };
+const clearErr = () => document.getElementById('auth-error').style.display = 'none';
 
 window.doLogin = async () => {
-  const email = document.getElementById('login-email').value.trim();
-  const pwd = document.getElementById('login-pwd').value;
-  if (!email || !pwd) return showAuthError('Please fill all fields');
-  clearAuthError();
-
+  const email = document.getElementById('l-email').value.trim();
+  const pwd   = document.getElementById('l-pwd').value;
+  if (!email || !pwd) return showErr('Please enter your email and password.');
+  clearErr();
   const btn = document.getElementById('login-btn');
-  btn.disabled = true; btn.innerHTML = '<span class="loader"></span>';
+  btn.disabled = true; btn.innerHTML = '<span class="loader"></span>&nbsp; Signing in...';
 
-  if (!firebaseReady) {
-    // Demo mode
-    const u = demoUsers.find(u => u.email===email && u.password===pwd);
-    if (!u) { btn.disabled=false; btn.textContent='Sign In'; return showAuthError('Invalid credentials'); }
-    demoUser = u; currentUser = u;
-    showApp(); renderTable(demoDeployments);
-    btn.disabled=false; btn.textContent='Sign In';
+  if (!fbReady) {
+    // Demo mode: match email + password + role
+    const u = DEMO_USERS.find(u => u.email === email && u.password === pwd);
+    if (!u) {
+      btn.disabled=false; btn.textContent='Sign In →';
+      return showErr('Invalid credentials.<br/>Demo: <b>admin@demo.com</b> / admin123 &nbsp;|&nbsp; <b>vendor@demo.com</b> / vendor123');
+    }
+    if (u.role !== selectedRole) {
+      btn.disabled=false; btn.textContent='Sign In →';
+      return showErr(`Role mismatch. Your account is registered as <b>${u.role}</b>. Please select the correct role above.`);
+    }
+    currentUser = u;
+    showApp(); renderTable();
+    btn.disabled=false; btn.textContent='Sign In →';
     return;
   }
 
   try {
     await window._fb.signInWithEmailAndPassword(auth, email, pwd);
+    // onAuthStateChanged handles the rest
   } catch(e) {
-    btn.disabled=false; btn.textContent='Sign In';
-    showAuthError(e.message.replace('Firebase: ','').replace(/\(.*\)/,''));
-  }
-};
-
-window.doSignup = async () => {
-  const name = document.getElementById('signup-name').value.trim();
-  const email = document.getElementById('signup-email').value.trim();
-  const role = document.getElementById('signup-role').value;
-  const pwd = document.getElementById('signup-pwd').value;
-  if (!name||!email||!pwd) return showAuthError('Please fill all fields');
-  clearAuthError();
-
-  const btn = document.getElementById('signup-btn');
-  btn.disabled=true; btn.innerHTML='<span class="loader"></span>';
-
-  if (!firebaseReady) {
-    demoUsers.push({email, password:pwd, name, role});
-    showToast('Account created! Sign in now.','ok');
-    switchTab('login');
-    btn.disabled=false; btn.textContent='Create Account';
-    return;
-  }
-
-  try {
-    const cred = await window._fb.createUserWithEmailAndPassword(auth, email, pwd);
-    await window._fb.updateProfile(cred.user, { displayName: name });
-    const { setDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-    await setDoc(window._fb.doc(db, 'users', cred.user.uid), { name, role, email, uid: cred.user.uid });
-    showToast('Account created!','ok');
-  } catch(e) {
-    btn.disabled=false; btn.textContent='Create Account';
-    showAuthError(e.message.replace('Firebase: ','').replace(/\(.*\)/,''));
+    btn.disabled=false; btn.textContent='Sign In →';
+    const msg = e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password'
+      ? 'Invalid email or password.' : e.message.replace('Firebase: ','').replace(/\(.*\)/,'').trim();
+    showErr(msg);
   }
 };
 
 window.doLogout = async () => {
-  if (firebaseReady) await window._fb.signOut(auth);
-  else { demoUser = null; currentUser = null; showAuth(); }
+  if (fbReady) await window._fb.signOut(auth);
+  else { currentUser = null; showAuth(); }
 };
 
-// ════════════════════════════════════════════════════════
-//   SHOW / HIDE SCREENS
-// ════════════════════════════════════════════════════════
 function showApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  document.getElementById('header-name').textContent = currentUser.name || currentUser.email;
-  const roleEl = document.getElementById('header-role');
-  roleEl.textContent = (currentUser.role||'vendor').toUpperCase();
-  roleEl.className = 'role-tag' + (currentUser.role==='admin' ? '' : ' vendor');
-
-  // Vendors can't add if we want — remove button
-  if (currentUser.role === 'vendor') {
-    // Vendors CAN add deployments in this setup
-  }
-  updateStats();
+  document.getElementById('hdr-name').textContent = currentUser.name || currentUser.email;
+  const rp = document.getElementById('hdr-role');
+  rp.textContent = (currentUser.role||'vendor').toUpperCase();
+  rp.className = 'role-pill ' + (currentUser.role==='admin' ? 'admin' : 'vendor');
 }
-
 function showAuth() {
   document.getElementById('auth-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
+  document.getElementById('login-btn').textContent = 'Sign In →';
+  document.getElementById('login-btn').disabled = false;
 }
 
-// ════════════════════════════════════════════════════════
-//   DATA
-// ════════════════════════════════════════════════════════
-async function loadDeployments() {
-  if (!firebaseReady) {
-    renderTable(demoDeployments);
-    return;
-  }
+// ── QUARTER / FY LOGIC (Financial year Apr–Mar) ──
+function getQ(dateStr) {
+  if (!dateStr) return 'Q1';
+  const m = new Date(dateStr).getMonth() + 1;
+  if (m>=4 && m<=6)  return 'Q1';
+  if (m>=7 && m<=9)  return 'Q2';
+  if (m>=10 && m<=12) return 'Q3';
+  return 'Q4'; // Jan-Mar
+}
+function getFY(dateStr) {
+  if (!dateStr) return new Date().getFullYear();
+  const d = new Date(dateStr), y = d.getFullYear(), m = d.getMonth()+1;
+  return m >= 4 ? y : y-1;
+}
+function fyLabel(fy) { return `FY ${fy}–${(fy+1).toString().slice(2)}`; }
+
+// ── DATA ──
+async function loadRows() {
+  if (!fbReady) { renderTable(); return; }
   try {
-    const snap = await window._fb.getDocs(window._fb.collection(db, 'deployments'));
-    const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderTable(rows);
-  } catch(e) { showToast('Error loading data','err'); }
+    const snap = await window._fb.getDocs(window._fb.collection(db,'deployments'));
+    allRows = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    renderTable();
+  } catch(e) { toast('Error loading data','err'); }
 }
 
-let allRows = [];
-
-function renderTable(rows) {
-  allRows = rows;
-  applyFilters();
-}
-
-function applyFilters(search='') {
-  let rows = [...allRows];
-  if (currentTab !== 'ALL') rows = rows.filter(r => r.env === currentTab);
-  if (search) {
-    const s = search.toLowerCase();
+function getFiltered() {
+  let rows = (fbReady ? allRows : demoRows).filter(r => r.env === currentEnv);
+  if (currentQ !== 'ALL') {
+    rows = rows.filter(r => getQ(r.deployDate || r.approvalDate || '') === currentQ);
+  }
+  if (searchVal) {
+    const s = searchVal.toLowerCase();
     rows = rows.filter(r =>
+      (r.application||'').toLowerCase().includes(s) ||
       (r.crNo||'').toLowerCase().includes(s) ||
-      (r.description||'').toLowerCase().includes(s) ||
-      (r.remarks||'').toLowerCase().includes(s)
+      (r.purpose||'').toLowerCase().includes(s) ||
+      (r.remarks||'').toLowerCase().includes(s) ||
+      (r.reason||'').toLowerCase().includes(s)
     );
   }
-  const tbody = document.getElementById('table-body');
-  const empty = document.getElementById('empty-state');
+  return rows;
+}
 
-  if (rows.length === 0) {
-    tbody.innerHTML = '';
-    empty.style.display = 'block';
-    updateStats();
-    return;
+function renderTable() {
+  const rows   = getFiltered();
+  const src    = fbReady ? allRows : demoRows;
+  const envAll = src.filter(r => r.env === currentEnv);
+
+  // Stats
+  document.getElementById('st-total').textContent = envAll.length;
+  document.getElementById('st-dep').textContent   = envAll.filter(r=>r.status==='Deployed').length;
+  document.getElementById('st-roll').textContent  = envAll.filter(r=>r.status==='Rollback').length;
+  document.getElementById('st-pend').textContent  = envAll.filter(r=>r.status==='Pending').length;
+  document.getElementById('st-reat').textContent  = envAll.filter(r=>r.reattemptDate).length;
+
+  // FY label from first filtered row's deploy date
+  if (rows.length) {
+    const ref = rows[0].deployDate || rows[0].approvalDate || '';
+    document.getElementById('fy-label').textContent = fyLabel(getFY(ref));
   }
+
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('empty-state');
+  if (!rows.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display = 'none';
 
-  tbody.innerHTML = rows.map((r,i) => `
-    <tr>
-      <td style="color:var(--muted);font-family:var(--mono);font-size:12px">${i+1}</td>
-      <td><span class="cr-no">${esc(r.crNo||'—')}</span></td>
-      <td class="desc-cell"><span class="desc-text" title="${esc(r.description||'')}">${esc(r.description||'—')}</span></td>
-      <td><span class="env-badge">${esc(r.env||'—')}</span></td>
-      <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${r.date||'—'}</td>
-      <td><span class="badge ${(r.status||'').toLowerCase()}">${esc(r.status||'Pending')}</span></td>
-      <td style="font-size:12px;color:var(--muted);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.remarks||'—')}</td>
+  const isAdmin = currentUser?.role === 'admin';
+
+  tbody.innerHTML = rows.map((r,i) => {
+    const st  = (r.status||'pending').toLowerCase().replace(/\s/g,'');
+    const pl  = r.passLog || 'N/A';
+    const plc = pl.toLowerCase()==='yes' ? 'yes' : pl.toLowerCase()==='no' ? 'no' : 'na';
+    const dash = '<span style="color:var(--muted)">—</span>';
+    return `<tr>
+      <td class="td-sr">${i+1}</td>
+      <td class="td-cr">${esc(r.crNo||'—')}</td>
+      <td class="td-app">${esc(r.application||'—')}</td>
+      <td class="td-trunc"><span title="${esc(r.purpose||'')}">${esc(r.purpose||'—')}</span></td>
+      <td class="td-date">${fmt(r.approvalDate)}</td>
+      <td class="td-date">${fmt(r.deployDate)}</td>
+      <td><span class="badge ${st}">${esc(r.status||'Pending')}</span></td>
+      <td class="td-date">${r.reattemptDate ? fmt(r.reattemptDate) : dash}</td>
+      <td class="td-trunc"><span title="${esc(r.impactInProd||'')}">${esc(r.impactInProd||'—')}</span></td>
+      <td class="td-trunc"><span title="${esc(r.reason||'')}">${esc(r.reason||'—')}</span></td>
+      <td class="td-date">${fmt(r.uatDate)}</td>
+      <td><span class="yn ${plc}">${esc(pl)}</span></td>
+      <td style="font-size:11px;color:var(--muted)">${esc(r.prodFix||'—')}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--accent)">${esc(r.apkVersion||'—')}</td>
+      <td class="td-trunc"><span title="${esc(r.remarks||'')}">${esc(r.remarks||'—')}</span></td>
+      <td style="font-size:10px;color:var(--muted);font-family:var(--mono)">${esc(r.createdBy||'—')}</td>
       <td>
         <div class="action-btns">
-          <button class="btn-icon" onclick="editRow('${r.id}')">✎ Edit</button>
-          ${currentUser.role==='admin' ? `<button class="btn-icon del" onclick="deleteRow('${r.id}')">✕</button>` : ''}
+          <button class="btn-icon" onclick="editRow('${r.id}')" ${!isAdmin?'disabled title="Admin only"':''}>✎ Edit</button>
+          <button class="btn-icon del" onclick="delRow('${r.id}')" ${!isAdmin?'disabled title="Admin only"':''}>✕</button>
         </div>
       </td>
-    </tr>
-  `).join('');
-
-  updateStats();
+    </tr>`;
+  }).join('');
 }
 
-function updateStats() {
-  const rows = currentTab==='ALL' ? allRows : allRows.filter(r=>r.env===currentTab);
-  document.getElementById('stat-total').textContent = rows.length;
-  document.getElementById('stat-success').textContent = rows.filter(r=>r.status==='Success').length;
-  document.getElementById('stat-failed').textContent = rows.filter(r=>r.status==='Failure').length;
-  document.getElementById('stat-pending').textContent = rows.filter(r=>r.status==='Pending').length;
-}
-
-window.filterTable = (v) => applyFilters(v);
-
-window.switchEnvTab = (el, tab) => {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  currentTab = tab;
-  applyFilters(document.querySelector('.search-box').value);
-};
-
-// ════════════════════════════════════════════════════════
-//   MODAL
-// ════════════════════════════════════════════════════════
+// ── MODAL ──
 window.openModal = (id=null) => {
   editingId = id;
-  document.getElementById('modal-title').textContent = id ? 'Edit Deployment' : 'New Deployment';
+  const isAdmin = currentUser?.role === 'admin';
+  document.getElementById('modal-title').textContent = id ? 'Edit Deployment' : 'Add Deployment';
+  document.getElementById('modal-env-tag').textContent = currentEnv;
+  document.getElementById('vendor-notice').style.display = !isAdmin ? 'block' : 'none';
+
+  const clear = () => {
+    ['f-cr','f-app','f-apk','f-purpose','f-approval','f-deploy',
+     'f-reattempt','f-impact','f-reason','f-uat','f-profix','f-remarks']
+      .forEach(x => document.getElementById(x).value='');
+    document.getElementById('f-status').value  = 'Pending';
+    document.getElementById('f-passlog').value = 'N/A';
+    document.getElementById('f-deploy').value  = new Date().toISOString().split('T')[0];
+  };
+
   if (id) {
-    const r = allRows.find(r=>r.id===id);
+    const src = fbReady ? allRows : demoRows;
+    const r = src.find(r => r.id === id);
     if (r) {
-      document.getElementById('f-cr').value = r.crNo||'';
-      document.getElementById('f-env').value = r.env||'Q1';
-      document.getElementById('f-desc').value = r.description||'';
-      document.getElementById('f-status').value = r.status||'Pending';
-      document.getElementById('f-date').value = r.date||'';
-      document.getElementById('f-remarks').value = r.remarks||'';
+      document.getElementById('f-cr').value       = r.crNo||'';
+      document.getElementById('f-app').value      = r.application||'';
+      document.getElementById('f-apk').value      = r.apkVersion||'';
+      document.getElementById('f-purpose').value  = r.purpose||'';
+      document.getElementById('f-approval').value = r.approvalDate||'';
+      document.getElementById('f-deploy').value   = r.deployDate||'';
+      document.getElementById('f-status').value   = r.status||'Pending';
+      document.getElementById('f-reattempt').value= r.reattemptDate||'';
+      document.getElementById('f-impact').value   = r.impactInProd||'';
+      document.getElementById('f-reason').value   = r.reason||'';
+      document.getElementById('f-uat').value      = r.uatDate||'';
+      document.getElementById('f-passlog').value  = r.passLog||'N/A';
+      document.getElementById('f-profix').value   = r.prodFix||'';
+      document.getElementById('f-remarks').value  = r.remarks||'';
     }
-  } else {
-    ['f-cr','f-desc','f-remarks'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('f-env').value = currentTab!=='ALL' ? currentTab : 'Q1';
-    document.getElementById('f-status').value = 'Pending';
-    document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
-  }
+  } else { clear(); }
+
   document.getElementById('modal').classList.add('open');
 };
 
@@ -923,92 +764,131 @@ window.closeModal = () => {
   editingId = null;
 };
 
-window.editRow = (id) => openModal(id);
+window.editRow = id => {
+  if (currentUser?.role !== 'admin') return toast('Admin access required to edit entries','err');
+  openModal(id);
+};
 
-window.saveDeployment = async () => {
+window.saveEntry = async () => {
+  const crNo        = document.getElementById('f-cr').value.trim();
+  const application = document.getElementById('f-app').value.trim();
+  const purpose     = document.getElementById('f-purpose').value.trim();
+  if (!crNo || !application || !purpose) return toast('CR No, Application and Purpose are required','err');
+
+  const deployDate = document.getElementById('f-deploy').value;
   const data = {
-    crNo: document.getElementById('f-cr').value.trim(),
-    description: document.getElementById('f-desc').value.trim(),
-    env: document.getElementById('f-env').value,
-    status: document.getElementById('f-status').value,
-    date: document.getElementById('f-date').value,
-    remarks: document.getElementById('f-remarks').value.trim(),
+    env:          currentEnv,
+    crNo, application, purpose,
+    apkVersion:   document.getElementById('f-apk').value.trim(),
+    approvalDate: document.getElementById('f-approval').value,
+    deployDate,
+    status:       document.getElementById('f-status').value,
+    reattemptDate:document.getElementById('f-reattempt').value,
+    impactInProd: document.getElementById('f-impact').value.trim(),
+    reason:       document.getElementById('f-reason').value.trim(),
+    uatDate:      document.getElementById('f-uat').value,
+    passLog:      document.getElementById('f-passlog').value,
+    prodFix:      document.getElementById('f-profix').value.trim(),
+    remarks:      document.getElementById('f-remarks').value.trim(),
+    createdBy:    currentUser.email || currentUser.name,
   };
-  if (!data.crNo || !data.description) return showToast('CR No and Description are required','err');
 
-  if (!firebaseReady) {
+  if (!fbReady) {
     if (editingId) {
-      const idx = demoDeployments.findIndex(r=>r.id===editingId);
-      if (idx>-1) demoDeployments[idx] = { ...demoDeployments[idx], ...data };
+      const i = demoRows.findIndex(r => r.id===editingId);
+      if (i > -1) demoRows[i] = { ...demoRows[i], ...data };
+      toast('Updated successfully!','ok');
     } else {
-      demoDeployments.unshift({ id:'d'+Date.now(), ...data, createdBy: currentUser.email });
+      demoRows.unshift({ id:'d'+Date.now(), ...data });
+      toast('Deployment added!','ok');
     }
-    closeModal();
-    renderTable(demoDeployments);
-    showToast(editingId ? 'Deployment updated!' : 'Deployment added!','ok');
-    return;
+    closeModal(); renderTable(); return;
   }
 
   try {
     if (editingId) {
       await window._fb.updateDoc(window._fb.doc(db,'deployments',editingId), data);
-      showToast('Updated!','ok');
+      toast('Updated!','ok');
     } else {
-      await window._fb.addDoc(window._fb.collection(db,'deployments'), { ...data, createdBy: currentUser.email, createdAt: window._fb.serverTimestamp() });
-      showToast('Deployment added!','ok');
+      await window._fb.addDoc(window._fb.collection(db,'deployments'), {
+        ...data, createdAt: window._fb.serverTimestamp()
+      });
+      toast('Deployment added!','ok');
     }
-    closeModal();
-    loadDeployments();
-  } catch(e) { showToast('Error saving: '+e.message,'err'); }
+    closeModal(); loadRows();
+  } catch(e) { toast('Error: '+e.message,'err'); }
 };
 
-window.deleteRow = async (id) => {
-  if (!confirm('Delete this deployment?')) return;
-  if (!firebaseReady) {
-    demoDeployments = demoDeployments.filter(r=>r.id!==id);
-    renderTable(demoDeployments);
-    showToast('Deleted','ok'); return;
+window.delRow = async id => {
+  if (currentUser?.role !== 'admin') return toast('Admin access required','err');
+  if (!confirm('Delete this deployment entry? This cannot be undone.')) return;
+  if (!fbReady) {
+    demoRows = demoRows.filter(r => r.id !== id);
+    renderTable(); toast('Entry deleted','ok'); return;
   }
   try {
     await window._fb.deleteDoc(window._fb.doc(db,'deployments',id));
-    showToast('Deleted','ok');
-    loadDeployments();
-  } catch(e) { showToast('Error','err'); }
+    toast('Deleted','ok'); loadRows();
+  } catch(e) { toast('Error deleting','err'); }
 };
 
-// ════════════════════════════════════════════════════════
-//   UTILS
-// ════════════════════════════════════════════════════════
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// ── NAV ──
+window.switchEnv = env => {
+  currentEnv = env; currentQ = 'ALL';
+  document.getElementById('env-cug').className  = 'env-btn' + (env==='CUG'  ? ' ac' : '');
+  document.getElementById('env-prod').className = 'env-btn' + (env==='PROD' ? ' ap' : '');
+  document.getElementById('env-uat').className  = 'env-btn' + (env==='UAT'  ? ' au' : '');
+  document.querySelectorAll('.q-btn').forEach(b => b.classList.toggle('active', b.dataset.q==='ALL'));
+  document.querySelector('.search-box').value = ''; searchVal = '';
+  renderTable();
+};
 
-let toastTimer;
-window.showToast = (msg, type='ok') => {
+window.switchQ = (el, q) => {
+  currentQ = q;
+  document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderTable();
+};
+
+window.doSearch = v => { searchVal = v; renderTable(); };
+
+// ── EXPORT CSV ──
+window.exportCSV = () => {
+  const rows = getFiltered();
+  if (!rows.length) return toast('No data to export','err');
+  const h = ['Sr No','CR No','Application','Purpose','Approval Date','Deploy Date','Status',
+    'Reattempted Date','Impact in Prod','Reason','UAT Date','Pass Log','Prod Fix/CF','APK Version','Remarks','Added By'];
+  const lines = [h.join(','), ...rows.map((r,i) => [
+    i+1, q(r.crNo), q(r.application), q(r.purpose), r.approvalDate, r.deployDate,
+    r.status, r.reattemptDate, q(r.impactInProd), q(r.reason), r.uatDate,
+    r.passLog, q(r.prodFix), q(r.apkVersion), q(r.remarks), q(r.createdBy)
+  ].join(','))];
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([lines.join('\n')], {type:'text/csv'}));
+  a.download = `DeployTrack_${currentEnv}_${currentQ}_${Date.now()}.csv`;
+  a.click(); toast('CSV exported!','ok');
+};
+
+// ── UTILS ──
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const q   = s => '"'+(s||'').replace(/"/g,'""')+'"';
+const fmt = d => {
+  if (!d) return '<span style="color:var(--muted)">—</span>';
+  const dt = new Date(d); if (isNaN(dt)) return d;
+  return dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+};
+
+let _tt;
+window.toast = (msg, type='ok') => {
   const t = document.getElementById('toast');
-  t.textContent = (type==='ok'?'✓ ':'✕ ') + msg;
+  t.textContent = (type==='ok'?'✓  ':'✕  ') + msg;
   t.className = `toast ${type} show`;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>t.classList.remove('show'), 3000);
+  clearTimeout(_tt); _tt = setTimeout(() => t.classList.remove('show'), 3200);
 };
 
-window.showFirebaseHelp = () => {
-  alert(`HOW TO CONNECT FIREBASE:
+document.getElementById('modal').addEventListener('click', e => { if (e.target===e.currentTarget) closeModal(); });
 
-1. Go to console.firebase.google.com
-2. Create a new project
-3. Enable Authentication → Email/Password
-4. Create a Firestore database (start in test mode)
-5. Go to Project Settings → Your Apps → Web App
-6. Copy the config object
-7. Paste it into FIREBASE_CONFIG in this file's <script> section
-
-That's it! Your data will persist and users can log in.`);
-};
-
-// Close modal on overlay click
-document.getElementById('modal').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal(); });
-
-// Init
-initFirebase();
+initFB();
 </script>
 </body>
 </html>
